@@ -1,165 +1,61 @@
-# geodrop
+# GeoDrop: Cross-Chain Physical Bounties
 
-Next.js starter with Tailwind CSS, `@solana/kit`, and an Anchor vault program example.
+**"GeoDrop: Gamifying real-world onboarding to the Solana ecosystem. It's Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses."**
 
-## Getting Started
+## What is GeoDrop?
+GeoDrop is a decentralized, location-based bounty platform that turns the real world into an interactive crypto playground. 
+*   **For Brands & Sponsors:** A frictionless way to run geo-targeted marketing campaigns. Sponsors can drop token bounties (e.g., USDC, SOL, or custom SPL tokens) at specific physical map coordinates, seamlessly funded from Ethereum, Base, or Arbitrum using our LiFi integration.
+*   **For Users (Hunters):** An engaging, native Android app where users explore their city to discover active drops. By physically walking to a location, they generate cryptographic proofs of location to claim rewards instantly on Solana using the Mobile Wallet Adapter (MWA).
 
-```shell
-npx -y create-solana-dapp@latest -t solana-foundation/templates/kit/geodrop
-```
+## Architecture & Tech Stack
 
-```shell
-npm install
-npm run setup   # Builds the Anchor program and generates the TypeScript client
-npm run dev
-```
+This repository is structured as a modern PNPM workspace monorepo.
 
-Open [http://localhost:3000](http://localhost:3000), connect your wallet, and interact with the vault.
+*   **Web Portal (Sponsor Dashboard):** Next.js app located at the project root (`app/`). Built with Tailwind CSS and `@solana/kit` for Wallet Standard integration and cross-chain LiFi funding UI.
+*   **Mobile App (Hunter - Android):** React Native (Expo) app located in `apps/mobile/`. Utilizes `@solana/kit`, Mobile Wallet Adapter (MWA), and device GPS for location verification.
+*   **Smart Contract (Solana):** Anchor (Rust) program located in `anchor/`. Manages the Escrow PDAs and signature-based claim logic.
+*   **Shared SDK:** A generated Codama client located in `packages/geodrop-client/`. It ensures strict type safety across both Web and Mobile apps by emitting typed instructions directly from the Anchor IDL.
 
-## What's Included
+## Prerequisites
 
-- **Wallet connection** via wallet-standard with auto-discovery and dropdown UI
-- **Cluster switching** — devnet, testnet, mainnet, and localnet from the header
-- **Wallet balance** display with airdrop button (devnet/testnet/localnet)
-- **SOL Vault program** — deposit and withdraw SOL from a personal PDA vault
-- **Toast notifications** with explorer links for every transaction
-- **Error handling** — human-readable messages for common Solana and program errors
-- **Codama-generated client** — type-safe program interactions using `@solana/kit`
-- **Tailwind CSS v4** with light/dark mode toggle
+Ensure you have the following installed on your system before proceeding:
 
-## Stack
+*   [Node.js](https://nodejs.org/en/) (v20+ recommended)
+*   [PNPM](https://pnpm.io/installation)
+*   [Rust](https://www.rust-lang.org/tools/install)
+*   [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools)
+*   [Anchor CLI](https://www.anchor-lang.com/docs/installation)
+*   [Expo CLI](https://docs.expo.dev/get-started/installation/)
 
-| Layer          | Technology                       |
-| -------------- | -------------------------------- |
-| Frontend       | Next.js 16, React 19, TypeScript |
-| Styling        | Tailwind CSS v4                  |
-| Solana Client  | `@solana/kit`, wallet-standard   |
-| Program Client | Codama-generated, `@solana/kit`  |
-| Program        | Anchor (Rust)                    |
+## Local Setup & Development
 
-## Project Structure
+Follow these steps to run the complete GeoDrop stack locally.
 
-```
-├── app/
-│   ├── components/
-│   │   ├── cluster-context.tsx  # Cluster state (React context + localStorage)
-│   │   ├── cluster-select.tsx   # Cluster switcher dropdown
-│   │   ├── grid-background.tsx  # Solana-branded decorative grid
-│   │   ├── providers.tsx        # Wallet + theme providers
-│   │   ├── theme-toggle.tsx     # Light/dark mode toggle
-│   │   ├── vault-card.tsx       # Vault deposit/withdraw UI
-│   │   └── wallet-button.tsx    # Wallet connect/disconnect dropdown
-│   ├── generated/vault/        # Codama-generated program client
-│   ├── lib/
-│   │   ├── wallet/             # Wallet-standard connection layer
-│   │   │   ├── types.ts        # Wallet types
-│   │   │   ├── standard.ts     # Wallet discovery + session creation
-│   │   │   ├── signer.ts       # WalletSession → TransactionSigner
-│   │   │   └── context.tsx     # WalletProvider + useWallet() hook
-│   │   ├── hooks/
-│   │   │   ├── use-balance.ts  # SWR-based balance fetching
-│   │   │   └── use-send-transaction.ts  # Transaction send with loading state
-│   │   ├── cluster.ts          # Cluster endpoints + RPC factory
-│   │   ├── lamports.ts         # SOL/lamports conversion
-│   │   ├── send-transaction.ts # Transaction build + sign + send pipeline
-│   │   ├── errors.ts           # Transaction error parsing
-│   │   └── explorer.ts         # Explorer URL builder + address helpers
-│   └── page.tsx                # Main page
-├── anchor/                     # Anchor workspace
-│   └── programs/vault/         # Vault program (Rust)
-└── codama.json                 # Codama client generation config
-```
-
-## Local Development
-
-To test against a local validator instead of devnet:
-
-1. **Start a local validator**
-
-   ```bash
-   solana-test-validator
-   ```
-
-2. **Deploy the program locally**
-
-   ```bash
-   solana config set --url localhost
-   cd anchor
-   anchor build
-   anchor deploy
-   cd ..
-   npm run codama:js   # Regenerate client with local program ID
-   ```
-
-3. **Switch to localnet** in the app using the cluster selector in the header.
-
-## Deploy Your Own Vault
-
-The included vault program is already deployed to devnet. To deploy your own:
-
-### Prerequisites
-
-- [Rust](https://rustup.rs/)
-- [Solana CLI](https://solana.com/docs/intro/installation)
-- [Anchor](https://www.anchor-lang.com/docs/installation)
-
-### Steps
-
-1. **Configure Solana CLI for devnet**
-
-   ```bash
-   solana config set --url devnet
-   ```
-
-2. **Create a wallet (if needed) and fund it**
-
-   ```bash
-   solana-keygen new
-   solana airdrop 2
-   ```
-
-3. **Build and deploy the program**
-
-   ```bash
-   cd anchor
-   anchor build
-   anchor keys sync    # Updates program ID in source
-   anchor build        # Rebuild with new ID
-   anchor deploy
-   cd ..
-   ```
-
-4. **Regenerate the client and restart**
-   ```bash
-   npm run setup   # Rebuilds program and regenerates client
-   npm run dev
-   ```
-
-## Testing
-
-Tests use [LiteSVM](https://github.com/LiteSVM/litesvm), a fast lightweight Solana VM for testing.
-
+### 1. Install Dependencies
+Ensure you are in the `geodrop` directory and install all workspace dependencies using PNPM.
 ```bash
-npm run anchor-build   # Build the program first
-npm run anchor-test    # Run tests
+cd geodrop
+pnpm install
 ```
 
-The tests are in `anchor/programs/vault/src/tests.rs` and automatically use the program ID from `declare_id!`.
-
-## Regenerating the Client
-
-If you modify the program, regenerate the TypeScript client:
-
+### 2. Build the Anchor Program & Generate SDK
+Compile the Solana smart contract and generate the strictly typed Codama client into the shared workspace package.
 ```bash
-npm run setup   # Or: npm run anchor-build && npm run codama:js
+# Build the Rust contract and emit the IDL & TypeScript client
+pnpm run setup
 ```
 
-This uses [Codama](https://github.com/codama-idl/codama) to generate a type-safe client from the Anchor IDL.
+### 3. Start the Web Portal (Sponsor Dashboard)
+Run the Next.js development server. The dashboard will be available at `http://localhost:3000`.
+```bash
+# From the root of the geodrop directory
+pnpm run dev
+```
 
-## Learn More
-
-- [Solana Docs](https://solana.com/docs) — core concepts and guides
-- [Anchor Docs](https://www.anchor-lang.com/docs/introduction) — program development framework
-- [Deploying Programs](https://solana.com/docs/programs/deploying) — deployment guide
-- [@solana/kit](https://github.com/anza-xyz/kit) — Solana JavaScript SDK
-- [Codama](https://github.com/codama-idl/codama) — client generation from IDL
+### 4. Start the Mobile App (Hunter)
+Run the React Native Expo bundler. You can open it on an Android emulator or a physical device using the Expo Go app or a custom development build.
+```bash
+# In a new terminal window
+cd apps/mobile
+npx expo start
+```
