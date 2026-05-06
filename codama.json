@@ -1,0 +1,11 @@
+{
+  "idl": "./anchor/target/idl/vault.json",
+  "scripts": {
+    "js": [
+      {
+        "from": "@codama/renderers-js",
+        "args": ["./packages/geodrop-client/src"]
+      }
+    ]
+  }
+}
