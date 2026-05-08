@@ -82,9 +82,12 @@ export default function Home() {
       <div className="relative z-10">
         {/* Header */}
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-sm font-semibold tracking-tight">
-            Solana Starter Kit
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+            <span className="font-mono text-xs font-bold uppercase tracking-widest">
+              GeoDrop // Sponsor_Dashboard
+            </span>
+          </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <ClusterSelect />
@@ -96,61 +99,39 @@ export default function Home() {
           {/* Hero */}
           <section className="pt-6 pb-20 md:pt-8 md:pb-32">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div className="flex flex-col gap-4">
                 <h1 className="font-black tracking-tight text-foreground">
-                  <span className="block text-6xl md:text-7xl">Anchor</span>
-                  <span className="block text-7xl md:text-8xl">Vault</span>
+                  <span className="block text-6xl md:text-7xl">Geo</span>
+                  <span className="block text-7xl md:text-8xl text-indigo-500">Drop</span>
                 </h1>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href="/campaign/create"
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-indigo-500 px-6 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                  >
+                    Create a Drop
+                  </a>
+                  <button
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-foreground transition-all hover:bg-white/10"
+                  >
+                    Watch Demo
+                  </button>
+                </div>
               </div>
 
               <div className="flex max-w-2xl flex-col gap-3">
                 <p className="text-base leading-relaxed text-foreground/50">
-                  This program creates a personal vault for each user using a
-                  Program Derived Address (PDA). Connect your wallet, deposit
-                  SOL into your vault, and withdraw it anytime. Only you can
-                  access your funds.
+                  The first location-aware bounty platform. Brands drop crypto at physical coordinates, hunters claim them by walking there. Seamlessly fund your campaign from any chain using our integrated LI.FI bridge.
                 </p>
-                <p className="text-sm leading-relaxed text-foreground/40">
-                  The vault is an{" "}
-                  <a
-                    href="https://www.anchor-lang.com/docs/introduction"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2"
-                  >
-                    Anchor
-                  </a>{" "}
-                  program you can deploy to localnet or devnet and modify
-                  yourself. Check the README for setup instructions.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <a
-                    href="https://solana.com/docs"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-foreground/70 underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Solana docs
-                    <span aria-hidden="true">&rarr;</span>
-                  </a>
-                  <a
-                    href="https://www.anchor-lang.com/docs/introduction"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-foreground/70 underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Anchor docs
-                    <span aria-hidden="true">&rarr;</span>
-                  </a>
-                  <a
-                    href="https://faucet.solana.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-foreground/70 underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Faucet
-                    <span aria-hidden="true">&rarr;</span>
-                  </a>
+                <div className="mt-4 flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest opacity-40">
+                  <div className="flex items-center gap-1">
+                    <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                    <span>Cross-Chain Capable</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="h-1 w-1 rounded-full bg-indigo-500" />
+                    <span>Powered by Solana</span>
+                  </div>
                 </div>
               </div>
             </div>
