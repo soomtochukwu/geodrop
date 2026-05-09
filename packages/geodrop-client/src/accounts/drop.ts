@@ -78,7 +78,7 @@ export function getDropEncoder(): FixedSizeEncoder<DropArgs> {
       ["radius", getU64Encoder()],
       ["amount", getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: DROP_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: DROP_DISCRIMINATOR }),
   );
 }
 
@@ -101,24 +101,24 @@ export function getDropCodec(): FixedSizeCodec<DropArgs, Drop> {
 }
 
 export function decodeDrop<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress>,
 ): Account<Drop, TAddress>;
 export function decodeDrop<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>
+  encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Drop, TAddress>;
 export function decodeDrop<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>
+  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Drop, TAddress> | MaybeAccount<Drop, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getDropDecoder()
+    getDropDecoder(),
   );
 }
 
 export async function fetchDrop<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<Account<Drop, TAddress>> {
   const maybeAccount = await fetchMaybeDrop(rpc, address, config);
   assertAccountExists(maybeAccount);
@@ -128,7 +128,7 @@ export async function fetchDrop<TAddress extends string = string>(
 export async function fetchMaybeDrop<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
-  config?: FetchAccountConfig
+  config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Drop, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
   return decodeDrop(maybeAccount);
@@ -137,7 +137,7 @@ export async function fetchMaybeDrop<TAddress extends string = string>(
 export async function fetchAllDrop(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<Account<Drop>[]> {
   const maybeAccounts = await fetchAllMaybeDrop(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
@@ -147,7 +147,7 @@ export async function fetchAllDrop(
 export async function fetchAllMaybeDrop(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
-  config?: FetchAccountsConfig
+  config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Drop>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeDrop(maybeAccount));

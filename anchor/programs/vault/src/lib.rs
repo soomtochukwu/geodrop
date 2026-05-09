@@ -11,7 +11,10 @@ pub mod vault {
     use super::*;
 
     pub fn deposit(ctx: Context<VaultAction>, amount: u64) -> Result<()> {
-        require!(ctx.accounts.vault.lamports() == 0, VaultError::VaultAlreadyExists);
+        require!(
+            ctx.accounts.vault.lamports() == 0,
+            VaultError::VaultAlreadyExists
+        );
 
         let rent = Rent::get()?.minimum_balance(0);
         require!(amount > rent, VaultError::InvalidAmount);
@@ -68,16 +71,21 @@ pub mod vault {
         drop.radius = radius;
         drop.amount = amount;
 
-        transfer(
-            CpiContext::new(
-                ctx.accounts.system_program.to_account_info(),
-                Transfer {
-                    from: ctx.accounts.sponsor.to_account_info(),
-                    to: ctx.accounts.drop.to_account_info(),
-                },
-            ),
-            amount,
-        )?;
+        // Handle existing funds bridged via LiFi
+        let current_lamports = ctx.accounts.drop.to_account_info().lamports();
+        if current_lamports < amount {
+            let diff = amount - current_lamports;
+            transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    Transfer {
+                        from: ctx.accounts.sponsor.to_account_info(),
+                        to: ctx.accounts.drop.to_account_info(),
+                    },
+                ),
+                diff,
+            )?;
+        }
 
         Ok(())
     }
@@ -88,7 +96,7 @@ pub mod vault {
         // Check distance (Manhattan for simplicity in MVP, or squared Euclidean)
         let d_lat = (drop.latitude - lat).abs();
         let d_long = (drop.longitude - long).abs();
-        
+
         // Use squared Euclidean distance to avoid sqrt
         // distance^2 = dx^2 + dy^2
         let dist_sq = (d_lat as u128).pow(2) + (d_long as u128).pow(2);
@@ -96,9 +104,9 @@ pub mod vault {
 
         require!(dist_sq <= radius_sq, VaultError::OutOfRange);
 
-        // Lamports are already in the drop account. 
+        // Lamports are already in the drop account.
         // Anchor's `close` will transfer them to the hunter.
-        
+
         Ok(())
     }
 }
@@ -121,7 +129,7 @@ pub struct InitializeDrop<'info> {
     #[account(mut)]
     pub sponsor: Signer<'info>,
     #[account(
-        init,
+        init_if_needed,
         payer = sponsor,
         space = 8 + 32 + 32 + 8 + 8 + 8 + 8, // disc + sponsor + backend_authority + i64 + i64 + u64 + u64
         seeds = [b"drop", sponsor.key().as_ref()],
