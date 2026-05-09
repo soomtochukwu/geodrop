@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { lamports as sol } from "@solana/kit";
+import { useState, useEffect } from "react";
+import { lamports as sol, type Account, type Address } from "@solana/kit";
 import { toast } from "sonner";
 import { useWallet } from "./lib/wallet/context";
 import { useBalance } from "./lib/hooks/use-balance";
@@ -14,6 +14,10 @@ import { ThemeToggle } from "./components/theme-toggle";
 import { ClusterSelect } from "./components/cluster-select";
 import { WalletButton } from "./components/wallet-button";
 import { useCluster } from "./components/cluster-context";
+import { CampaignCard } from "./components/campaign/campaign-card";
+import { fetchDrop, findDropPda } from "./generated/vault";
+import { type Drop } from "./generated/vault/accounts";
+import { Plus, LayoutGrid, Loader2, Wallet } from "lucide-react";
 
 export default function Home() {
   const { wallet, status } = useWallet();
@@ -23,6 +27,33 @@ export default function Home() {
   const address = wallet?.account.address;
   const balance = useBalance(address);
   const [copied, setCopied] = useState(false);
+
+  const [myDrops, setMyDrops] = useState<Account<Drop>[]>([]);
+  const [isLoadingDrops, setIsLoadingDrops] = useState(false);
+
+  // Fetch campaign for the connected sponsor
+  useEffect(() => {
+    async function fetchCampaigns() {
+      if (!address || status !== "connected") {
+        setMyDrops([]);
+        return;
+      }
+
+      setIsLoadingDrops(true);
+      try {
+        const [pda] = await findDropPda({ sponsor: address });
+        // We use fetchDrop which asserts the account exists
+        const drop = await fetchDrop(client.rpc, pda);
+        setMyDrops([drop]);
+      } catch (e) {
+        console.log("No active campaign found for this sponsor.");
+        setMyDrops([]);
+      } finally {
+        setIsLoadingDrops(false);
+      }
+    }
+    fetchCampaigns();
+  }, [address, status, client.rpc]);
 
   const handleCopy = async () => {
     if (!address) return;
@@ -97,7 +128,7 @@ export default function Home() {
 
         <main className="mx-auto max-w-6xl px-6">
           {/* Hero */}
-          <section className="pt-6 pb-20 md:pt-8 md:pb-32">
+          <section className="pt-6 pb-20 md:pt-8 md:pb-24">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-4">
                 <h1 className="font-black tracking-tight text-foreground">
@@ -109,11 +140,12 @@ export default function Home() {
                 <div className="flex flex-wrap gap-3">
                   <a
                     href="/campaign/create"
-                    className="inline-flex h-10 items-center justify-center rounded-full bg-indigo-500 px-6 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                    className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-indigo-500 px-8 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                   >
-                    Create a Drop
+                    <Plus className="h-4 w-4" />
+                    CREATE_NEW_DROP
                   </a>
-                  <button className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-foreground transition-all hover:bg-white/10">
+                  <button className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-sm font-medium text-foreground transition-all hover:bg-white/10">
                     Watch Demo
                   </button>
                 </div>
@@ -140,116 +172,127 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Template content */}
-          <div className="space-y-10 pb-20">
-            {/* Wallet Balance */}
-            {status === "connected" && address && (
-              <section className="relative w-full overflow-hidden rounded-2xl border border-border-low bg-card px-5 py-5">
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-100 dark:opacity-0"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(0,0,0,0.06) 1px, transparent 1px)
-                    `,
-                    backgroundSize: "24px 24px",
-                    mask: "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                    WebkitMask:
-                      "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                  }}
-                />
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-0 dark:opacity-100"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)
-                    `,
-                    backgroundSize: "24px 24px",
-                    mask: "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                    WebkitMask:
-                      "radial-gradient(ellipse 80% 80% at 50% 0%, black, transparent)",
-                  }}
-                />
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4 text-foreground/70"
-                      >
-                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium">Wallet Balance</span>
-                    <button
-                      onClick={handleCopy}
-                      className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-muted transition hover:text-foreground"
-                    >
-                      {ellipsify(address, 4)}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-3 w-3"
-                      >
-                        {copied ? (
-                          <path d="M20 6 9 17l-5-5" />
-                        ) : (
-                          <>
-                            <rect
-                              width="14"
-                              height="14"
-                              x="8"
-                              y="8"
-                              rx="2"
-                              ry="2"
-                            />
-                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                          </>
-                        )}
-                      </svg>
-                    </button>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pb-20">
+            <div className="lg:col-span-2 space-y-10">
+              {/* Dashboard Section */}
+              <section className="space-y-6">
+                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className="h-4 w-4 text-indigo-400" />
+                    <h2 className="font-mono text-sm font-bold uppercase tracking-widest">
+                      My_Active_Campaigns
+                    </h2>
                   </div>
-                  {cluster !== "mainnet" && (
-                    <button
-                      onClick={handleAirdrop}
-                      className="cursor-pointer rounded-lg border border-border-low px-3 py-1.5 text-xs font-medium transition hover:bg-cream"
-                    >
-                      Airdrop
-                    </button>
+                  {myDrops.length > 0 && (
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                      Total_Nodes: 0{myDrops.length}
+                    </span>
                   )}
                 </div>
-                <p className="relative mt-4 font-mono text-4xl font-bold tabular-nums tracking-tight">
-                  {balance.lamports != null
-                    ? lamportsToSolString(balance.lamports)
-                    : "\u2014"}
-                  <span className="ml-1.5 text-lg font-normal text-muted">
-                    SOL
-                  </span>
-                </p>
-              </section>
-            )}
 
-            {/* Vault Program Section */}
-            <VaultCard />
+                {isLoadingDrops ? (
+                  <div className="flex h-48 w-full flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-white/5 bg-white/[0.02]">
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                    <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+                      SYNCHRONIZING_WITH_BLOCKCHAIN...
+                    </p>
+                  </div>
+                ) : myDrops.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {myDrops.map((drop) => (
+                      <CampaignCard key={drop.address} drop={drop} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex h-48 w-full flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-white/5 bg-white/[0.02] text-center px-6">
+                    <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
+                      No active drops found. Initialize your first location-based bounty to begin real-world engagement.
+                    </p>
+                    <a
+                      href="/campaign/create"
+                      className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      [+] DEPLOY_FIRST_DROP
+                    </a>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className="space-y-10">
+              {/* Wallet Balance Side Section */}
+              {status === "connected" && address && (
+                <section className="relative w-full overflow-hidden rounded-2xl border border-white/5 bg-card/50 p-6 backdrop-blur-xl">
+                  <div className="relative flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10">
+                        <Wallet className="h-3 w-3 text-indigo-500" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest font-mono">
+                        Vault_Status
+                      </span>
+                    </div>
+                    {cluster !== "mainnet" && (
+                      <button
+                        onClick={handleAirdrop}
+                        className="cursor-pointer font-mono text-[8px] uppercase tracking-widest text-indigo-400 underline underline-offset-4 hover:text-indigo-300"
+                      >
+                        [ Faucet ]
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-6 space-y-1">
+                    <p className="font-mono text-xs text-muted-foreground uppercase">
+                      Liquid_SOL
+                    </p>
+                    <p className="font-mono text-3xl font-black tabular-nums tracking-tighter">
+                      {balance.lamports != null
+                        ? lamportsToSolString(balance.lamports)
+                        : "\u2014"}
+                      <span className="ml-1 text-sm font-normal text-muted-foreground">
+                        SOL
+                      </span>
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleCopy}
+                    className="mt-6 flex w-full cursor-pointer items-center justify-between rounded-lg border border-white/5 bg-white/5 px-3 py-2 transition hover:bg-white/10"
+                  >
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {ellipsify(address, 6)}
+                    </span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3 w-3 text-muted-foreground"
+                    >
+                      {copied ? (
+                        <path d="M20 6 9 17l-5-5" />
+                      ) : (
+                        <>
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </>
+                      )}
+                    </svg>
+                  </button>
+                </section>
+              )}
+
+              {/* Template content */}
+              <VaultCard />
+            </div>
           </div>
         </main>
       </div>
     </div>
   );
 }
+
