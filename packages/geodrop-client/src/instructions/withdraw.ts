@@ -6,6 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+
 import {
   combineCodec,
   fixDecoderSize,

@@ -3,8 +3,12 @@ import { useState } from "react";
 import {
   address,
   createSolanaRpc,
-  getBase64Decoder,
+  getBase64Encoder,
   type Transaction,
+  type SignatureBytes,
+  type TransactionMessageBytes,
+  type SignaturesMap,
+  type Address,
 } from "@solana/kit";
 
 export const useClaimBounty = () => {
@@ -56,17 +60,21 @@ export const useClaimBounty = () => {
 
       const { messageBase64, signatures } = await response.json();
 
-      const base64Decoder = getBase64Decoder();
+      const base64Encoder = getBase64Encoder();
 
       // Decode backend signatures back to Uint8Array
-      const decodedSignatures: Record<string, Uint8Array> = {};
+      const decodedSignatures: SignaturesMap = {};
       for (const [key, base64Sig] of Object.entries(signatures)) {
-        decodedSignatures[key] = base64Decoder.decode(base64Sig as string);
+        decodedSignatures[address(key)] = base64Encoder.encode(
+          base64Sig as string
+        ) as SignatureBytes;
       }
 
       // Construct the @solana/kit Transaction object
       const transaction: Transaction = {
-        messageBytes: base64Decoder.decode(messageBase64),
+        messageBytes: base64Encoder.encode(
+          messageBase64
+        ) as TransactionMessageBytes,
         signatures: decodedSignatures,
       };
 
@@ -76,8 +84,8 @@ export const useClaimBounty = () => {
         BigInt(lastValidBlockHeight)
       );
 
-      // The signature for the fee payer (hunter) will be under their address in the returned object
-      const hunterSignature = txSignatures[currentAccount.address];
+      // The signature for the fee payer (hunter) is returned directly
+      const hunterSignature = txSignatures;
       console.log("[GeoDrop] Claim Success:", hunterSignature);
       setStatus("success");
     } catch (e) {

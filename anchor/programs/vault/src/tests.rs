@@ -2,12 +2,12 @@
 mod tests {
     use crate::ID as PROGRAM_ID;
     use litesvm::LiteSVM;
+    use anchor_lang::solana_program::system_program;
     use solana_sdk::{
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
         signature::Keypair,
         signer::Signer,
-        system_program,
         transaction::Transaction,
     };
 
@@ -212,7 +212,7 @@ mod tests {
 
         // Load the program
         let program_bytes = include_bytes!("../../../target/deploy/vault.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let _ = svm.add_program(PROGRAM_ID, program_bytes);
 
         // Create a user with some SOL
         let user = Keypair::new();
@@ -267,7 +267,7 @@ mod tests {
         let mut svm = LiteSVM::new();
 
         let program_bytes = include_bytes!("../../../target/deploy/vault.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let _ = svm.add_program(PROGRAM_ID, program_bytes);
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -304,7 +304,7 @@ mod tests {
         let mut svm = LiteSVM::new();
 
         let program_bytes = include_bytes!("../../../target/deploy/vault.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let _ = svm.add_program(PROGRAM_ID, program_bytes);
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();

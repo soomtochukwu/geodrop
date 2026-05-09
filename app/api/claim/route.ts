@@ -2,12 +2,10 @@ import { NextResponse } from "next/server";
 import {
   createKeyPairSignerFromBytes,
   getBase64Decoder,
-  getBase64Encoder,
   createTransactionMessage,
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
-  compileTransactionMessage,
   partiallySignTransactionMessageWithSigners,
   address,
 } from "@solana/kit";
@@ -135,23 +133,27 @@ export async function POST(request: Request) {
     });
 
     // Build the transaction
-    let txMessage = createTransactionMessage({ version: 0 });
-    txMessage = setTransactionMessageFeePayer(address(hunterPubkey), txMessage);
-    txMessage = setTransactionMessageLifetimeUsingBlockhash(
-      { blockhash, lastValidBlockHeight },
-      txMessage
+    const baseMessage = createTransactionMessage({ version: 0 });
+    const messageWithPayer = setTransactionMessageFeePayer(
+      address(hunterPubkey),
+      baseMessage
     );
-    txMessage = appendTransactionMessageInstruction(claimIx, txMessage);
-
-    const compiledMessage = compileTransactionMessage(txMessage);
+    const messageWithLifetime = setTransactionMessageLifetimeUsingBlockhash(
+      { blockhash, lastValidBlockHeight },
+      messageWithPayer
+    );
+    const txMessage = appendTransactionMessageInstruction(
+      claimIx,
+      messageWithLifetime
+    );
 
     // Partially sign with the backend authority
     const partiallySignedTx =
-      await partiallySignTransactionMessageWithSigners(compiledMessage);
+      await partiallySignTransactionMessageWithSigners(txMessage);
 
     // We can return the transaction bytes directly
     // Using an internal Solana Kit utility or simply returning the signatures and compiled message
-    const base64Encoder = getBase64Encoder();
+    const base64Decoder = getBase64Decoder();
 
     // Encode the fully assembled transaction (it has signatures record but missing hunter's)
     // To send it back to the client, we can send the signatures and the message bytes
@@ -159,12 +161,12 @@ export async function POST(request: Request) {
     const serializedSignatures = Object.fromEntries(
       Object.entries(signatures).map(([key, sig]) => [
         key,
-        base64Encoder.encode(sig),
+        base64Decoder.decode(sig as Uint8Array),
       ])
     );
 
     return NextResponse.json({
-      messageBase64: base64Encoder.encode(compiledMessage.bytes),
+      messageBase64: base64Decoder.decode(partiallySignedTx.messageBytes),
       signatures: serializedSignatures,
     });
   } catch (error) {
