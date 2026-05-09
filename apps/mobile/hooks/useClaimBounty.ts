@@ -1,11 +1,13 @@
-import { useMobileWallet } from '@wallet-ui/react-native-kit';
-import { useState } from 'react';
-import { address, createNoopSigner, type TransactionSigner } from '@solana/kit';
-import { getClaimDropInstruction } from '@geodrop/client';
+import { useMobileWallet } from "@wallet-ui/react-native-kit";
+import { useState } from "react";
+import { address, createNoopSigner, type TransactionSigner } from "@solana/kit";
+import { getClaimDropInstruction } from "@geodrop/client";
 
 export const useClaimBounty = () => {
   const { sendTransaction, account, connect } = useMobileWallet();
-  const [status, setStatus] = useState<'idle' | 'claiming' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<
+    "idle" | "claiming" | "success" | "error"
+  >("idle");
 
   const claimBounty = async (dropAddress: string) => {
     try {
@@ -13,9 +15,9 @@ export const useClaimBounty = () => {
       if (!currentAccount) {
         currentAccount = await connect();
       }
-      
-      setStatus('claiming');
-      
+
+      setStatus("claiming");
+
       const instruction = getClaimDropInstruction({
         hunter: createNoopSigner(currentAccount.address) as TransactionSigner,
         drop: address(dropAddress),
@@ -24,11 +26,11 @@ export const useClaimBounty = () => {
       });
 
       const signature = await sendTransaction([instruction]);
-      console.log('[GeoDrop] Claim Success:', signature);
-      setStatus('success');
+      console.log("[GeoDrop] Claim Success:", signature);
+      setStatus("success");
     } catch (e) {
-      console.error('[GeoDrop] Claim Error:', e);
-      setStatus('error');
+      console.error("[GeoDrop] Claim Error:", e);
+      setStatus("error");
     }
   };
 

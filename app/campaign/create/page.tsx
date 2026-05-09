@@ -11,7 +11,7 @@ import { useWallet } from "../../lib/wallet/context";
 export default function CreateCampaignPage() {
   const { status } = useWallet();
   const [step, setStep] = useState(3); // Defaulting to the funding step for this demo
-  
+
   // Mock data for the demonstration
   const mockBountyAddress = "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko";
 
@@ -42,16 +42,22 @@ export default function CreateCampaignPage() {
               { id: 1, label: "CAMPAIGN_TYPE" },
               { id: 2, label: "PARAMETERS" },
               { id: 3, label: "CROSS_CHAIN_FUNDING" },
-              { id: 4, label: "LAUNCH" }
+              { id: 4, label: "LAUNCH" },
             ].map((s) => (
               <div key={s.id} className="flex flex-col gap-2">
-                <span className={`font-mono text-[10px] tracking-tighter ${step === s.id ? 'text-indigo-400' : 'text-muted-foreground/40'}`}>
+                <span
+                  className={`font-mono text-[10px] tracking-tighter ${step === s.id ? "text-indigo-400" : "text-muted-foreground/40"}`}
+                >
                   STEP_0{s.id}
                 </span>
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${step === s.id ? 'text-foreground' : 'text-muted-foreground/30'}`}>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-widest ${step === s.id ? "text-foreground" : "text-muted-foreground/30"}`}
+                >
                   {s.label}
                 </span>
-                {step === s.id && <div className="h-0.5 w-full bg-indigo-500" />}
+                {step === s.id && (
+                  <div className="h-0.5 w-full bg-indigo-500" />
+                )}
               </div>
             ))}
           </div>
@@ -62,8 +68,8 @@ export default function CreateCampaignPage() {
                 Fund Escrow <span className="text-muted-foreground/20">_</span>
               </h1>
               <p className="text-sm text-muted-foreground">
-                Your bounty configuration is locked. Please fund the Solana Escrow PDA 
-                using your assets from any EVM-compatible chain.
+                Your bounty configuration is locked. Please fund the Solana
+                Escrow PDA using your assets from any EVM-compatible chain.
               </p>
             </div>
 
@@ -76,15 +82,15 @@ export default function CreateCampaignPage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-white/5 bg-card/50 p-1 backdrop-blur-xl">
-                <LiFiFundingWidget 
+                <LiFiFundingWidget
                   destinationAddress={mockBountyAddress}
                   amount="10" // Initial $10 bounty example
                 />
               </div>
             )}
-            
+
             <div className="flex justify-between pt-8">
-              <button 
+              <button
                 onClick={() => setStep(2)}
                 className="font-mono text-xs uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
               >

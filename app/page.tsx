@@ -102,7 +102,9 @@ export default function Home() {
               <div className="flex flex-col gap-4">
                 <h1 className="font-black tracking-tight text-foreground">
                   <span className="block text-6xl md:text-7xl">Geo</span>
-                  <span className="block text-7xl md:text-8xl text-indigo-500">Drop</span>
+                  <span className="block text-7xl md:text-8xl text-indigo-500">
+                    Drop
+                  </span>
                 </h1>
                 <div className="flex flex-wrap gap-3">
                   <a
@@ -111,9 +113,7 @@ export default function Home() {
                   >
                     Create a Drop
                   </a>
-                  <button
-                    className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-foreground transition-all hover:bg-white/10"
-                  >
+                  <button className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-foreground transition-all hover:bg-white/10">
                     Watch Demo
                   </button>
                 </div>
@@ -121,7 +121,10 @@ export default function Home() {
 
               <div className="flex max-w-2xl flex-col gap-3">
                 <p className="text-base leading-relaxed text-foreground/50">
-                  The first location-aware bounty platform. Brands drop crypto at physical coordinates, hunters claim them by walking there. Seamlessly fund your campaign from any chain using our integrated LI.FI bridge.
+                  The first location-aware bounty platform. Brands drop crypto
+                  at physical coordinates, hunters claim them by walking there.
+                  Seamlessly fund your campaign from any chain using our
+                  integrated LI.FI bridge.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest opacity-40">
                   <div className="flex items-center gap-1">
