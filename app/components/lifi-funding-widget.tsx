@@ -40,10 +40,11 @@ export const LiFiFundingWidget = ({
         boxShadow: "0 0 20px rgba(99, 102, 241, 0.05)", // Subtle indigo glow
       },
       // Location: Geodrop Sponsor Dashboard
-      fromChain: 8453, // Base
+      fromChain: 11155111, // Sepolia Testnet
       toChain: 115111108, // Solana Devnet
       toAddress: destinationAddress,
       toAmount: amount,
+      allowTestnets: true,
 
       // Aesthetic: Premium Cyber-Fintech
       appearance: "dark",
