@@ -1,10 +1,18 @@
 "use client";
 
-import { LiFiWidget, WidgetConfig } from "@lifi/widget";
+import dynamic from "next/dynamic";
 import { useMemo } from "react";
+import type { WidgetConfig } from "@lifi/widget";
+
+const LiFiWidget = dynamic(
+  () => import("@lifi/widget").then((mod) => mod.LiFiWidget),
+  { ssr: false, loading: () => <div className="h-[400px] w-full animate-pulse rounded-lg bg-white/5" /> }
+) as any;
 
 /**
  * GeoDrop LiFi Funding Widget
+
+
  * 
  * This component allows sponsors to fund Solana Escrow PDAs from any EVM chain.
  * It follows the 'Premium Cyber-Fintech' design system:
@@ -22,7 +30,7 @@ export const LiFiFundingWidget = ({
   amount?: string;
   onSuccess?: () => void;
 }) => {
-  const config: WidgetConfig = useMemo(() => ({
+  const config = useMemo(() => ({
     integrator: 'geodrop',
     containerStyle: {
       border: '1px solid #1a1a1a',
@@ -85,7 +93,7 @@ export const LiFiFundingWidget = ({
       
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
         <LiFiWidget 
-          config={config} 
+          config={config as any} 
           integrator="geodrop"
         />
       </div>

@@ -1,34 +1,36 @@
 import { useMobileWallet } from '@wallet-ui/react-native-kit';
-import { useConnection } from '@solana/react-hooks';
-import { Transaction, PublicKey } from '@solana/web3.js';
+import { useState } from 'react';
+import { address, createNoopSigner, type TransactionSigner } from '@solana/kit';
+import { getClaimDropInstruction } from '@geodrop/client';
 
 export const useClaimBounty = () => {
-  const { transact } = useMobileWallet();
-  const { connection } = useConnection();
+  const { sendTransaction, account, connect } = useMobileWallet();
+  const [status, setStatus] = useState<'idle' | 'claiming' | 'success' | 'error'>('idle');
 
-  const claimBounty = async (bountyAddress: string) => {
-    await transact(async (wallet) => {
-      // 1. Authorize the app with the wallet
-      const authorizationResult = await wallet.authorize({
-        cluster: 'devnet',
-        identity: { name: 'GeoDrop', uri: 'https://geodrop.xyz' },
+  const claimBounty = async (dropAddress: string) => {
+    try {
+      let currentAccount = account;
+      if (!currentAccount) {
+        currentAccount = await connect();
+      }
+      
+      setStatus('claiming');
+      
+      const instruction = getClaimDropInstruction({
+        hunter: createNoopSigner(currentAccount.address) as TransactionSigner,
+        drop: address(dropAddress),
+        lat: 105000000n,
+        long: 205000000n,
       });
 
-      // 2. Build the claim transaction
-      // (In a real scenario, we'd fetch the latest blockhash and add our instruction)
-      const transaction = new Transaction(); 
-      // ... instruction logic here ...
-
-      // 3. Request the signature via MWA
-      const [signedTransaction] = await wallet.signTransactions({
-        transactions: [transaction],
-      });
-
-      // 4. Send to the network
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-      return signature;
-    });
+      const signature = await sendTransaction([instruction]);
+      console.log('[GeoDrop] Claim Success:', signature);
+      setStatus('success');
+    } catch (e) {
+      console.error('[GeoDrop] Claim Error:', e);
+      setStatus('error');
+    }
   };
 
-  return { claimBounty };
+  return { claimBounty, status };
 };

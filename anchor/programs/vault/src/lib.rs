@@ -51,6 +51,54 @@ pub mod vault {
 
         Ok(())
     }
+
+    pub fn initialize_drop(
+        ctx: Context<InitializeDrop>,
+        lat: i64,
+        long: i64,
+        radius: u64,
+        amount: u64,
+    ) -> Result<()> {
+        let drop = &mut ctx.accounts.drop;
+        drop.sponsor = ctx.accounts.sponsor.key();
+        drop.latitude = lat;
+        drop.longitude = long;
+        drop.radius = radius;
+        drop.amount = amount;
+
+        transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.sponsor.to_account_info(),
+                    to: ctx.accounts.drop.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn claim_drop(ctx: Context<ClaimDrop>, lat: i64, long: i64) -> Result<()> {
+        let drop = &ctx.accounts.drop;
+
+        // Check distance (Manhattan for simplicity in MVP, or squared Euclidean)
+        let d_lat = (drop.latitude - lat).abs();
+        let d_long = (drop.longitude - long).abs();
+        
+        // Use squared Euclidean distance to avoid sqrt
+        // distance^2 = dx^2 + dy^2
+        let dist_sq = (d_lat as u128).pow(2) + (d_long as u128).pow(2);
+        let radius_sq = (drop.radius as u128).pow(2);
+
+        require!(dist_sq <= radius_sq, VaultError::OutOfRange);
+
+        // Lamports are already in the drop account. 
+        // Anchor's `close` will transfer them to the hunter.
+        
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -66,10 +114,50 @@ pub struct VaultAction<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct InitializeDrop<'info> {
+    #[account(mut)]
+    pub sponsor: Signer<'info>,
+    #[account(
+        init,
+        payer = sponsor,
+        space = 8 + 32 + 8 + 8 + 8 + 8, // disc + pubkey + i64 + i64 + u64 + u64
+        seeds = [b"drop", sponsor.key().as_ref()],
+        bump
+    )]
+    pub drop: Account<'info, Drop>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimDrop<'info> {
+    #[account(mut)]
+    pub hunter: Signer<'info>,
+    #[account(
+        mut,
+        close = hunter,
+        seeds = [b"drop", drop.sponsor.as_ref()],
+        bump,
+    )]
+    pub drop: Account<'info, Drop>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct Drop {
+    pub sponsor: Pubkey,
+    pub latitude: i64,
+    pub longitude: i64,
+    pub radius: u64,
+    pub amount: u64,
+}
+
 #[error_code]
 pub enum VaultError {
     #[msg("Vault already exists")]
     VaultAlreadyExists,
     #[msg("Invalid amount")]
     InvalidAmount,
+    #[msg("Hunter is out of range")]
+    OutOfRange,
 }

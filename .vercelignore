@@ -1,0 +1,5 @@
+anchor/target
+video
+apps/mobile/.expo
+apps/mobile/node_modules
+.agents

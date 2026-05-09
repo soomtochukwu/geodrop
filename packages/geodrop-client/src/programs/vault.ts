@@ -17,17 +17,47 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
+  parseClaimDropInstruction,
   parseDepositInstruction,
+  parseInitializeDropInstruction,
   parseWithdrawInstruction,
+  type ParsedClaimDropInstruction,
   type ParsedDepositInstruction,
+  type ParsedInitializeDropInstruction,
   type ParsedWithdrawInstruction,
 } from "../instructions";
 
 export const VAULT_PROGRAM_ADDRESS =
   "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko" as Address<"4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko">;
 
+export enum VaultAccount {
+  Drop,
+}
+
+export function identifyVaultAccount(
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
+): VaultAccount {
+  const data = "data" in account ? account.data : account;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([56, 174, 80, 200, 182, 146, 223, 35]),
+      ),
+      0,
+    )
+  ) {
+    return VaultAccount.Drop;
+  }
+  throw new Error(
+    "The provided account could not be identified as a vault account.",
+  );
+}
+
 export enum VaultInstruction {
+  ClaimDrop,
   Deposit,
+  InitializeDrop,
   Withdraw,
 }
 
@@ -39,12 +69,34 @@ export function identifyVaultInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([157, 29, 89, 14, 81, 203, 107, 58]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.ClaimDrop;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182]),
       ),
       0,
     )
   ) {
     return VaultInstruction.Deposit;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([189, 174, 162, 164, 253, 144, 182, 186]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.InitializeDrop;
   }
   if (
     containsBytes(
@@ -66,8 +118,14 @@ export type ParsedVaultInstruction<
   TProgram extends string = "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko",
 > =
   | ({
+      instructionType: VaultInstruction.ClaimDrop;
+    } & ParsedClaimDropInstruction<TProgram>)
+  | ({
       instructionType: VaultInstruction.Deposit;
     } & ParsedDepositInstruction<TProgram>)
+  | ({
+      instructionType: VaultInstruction.InitializeDrop;
+    } & ParsedInitializeDropInstruction<TProgram>)
   | ({
       instructionType: VaultInstruction.Withdraw;
     } & ParsedWithdrawInstruction<TProgram>);
@@ -77,11 +135,25 @@ export function parseVaultInstruction<TProgram extends string>(
 ): ParsedVaultInstruction<TProgram> {
   const instructionType = identifyVaultInstruction(instruction);
   switch (instructionType) {
+    case VaultInstruction.ClaimDrop: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.ClaimDrop,
+        ...parseClaimDropInstruction(instruction),
+      };
+    }
     case VaultInstruction.Deposit: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: VaultInstruction.Deposit,
         ...parseDepositInstruction(instruction),
+      };
+    }
+    case VaultInstruction.InitializeDrop: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.InitializeDrop,
+        ...parseInitializeDropInstruction(instruction),
       };
     }
     case VaultInstruction.Withdraw: {
