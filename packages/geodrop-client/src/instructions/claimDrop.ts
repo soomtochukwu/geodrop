@@ -92,7 +92,7 @@ export function getClaimDropInstructionDataEncoder(): FixedSizeEncoder<ClaimDrop
       ["lat", getI64Encoder()],
       ["long", getI64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CLAIM_DROP_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CLAIM_DROP_DISCRIMINATOR })
   );
 }
 
@@ -110,7 +110,7 @@ export function getClaimDropInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getClaimDropInstructionDataEncoder(),
-    getClaimDropInstructionDataDecoder(),
+    getClaimDropInstructionDataDecoder()
   );
 }
 
@@ -141,7 +141,7 @@ export function getClaimDropInstruction<
     TAccountDrop,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress },
+  config?: { programAddress?: TProgramAddress }
 ): ClaimDropInstruction<
   TProgramAddress,
   TAccountHunter,
@@ -185,7 +185,7 @@ export function getClaimDropInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getClaimDropInstructionDataEncoder().encode(
-      args as ClaimDropInstructionDataArgs,
+      args as ClaimDropInstructionDataArgs
     ),
     programAddress,
   } as ClaimDropInstruction<
@@ -217,7 +217,7 @@ export function parseClaimDropInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+    InstructionWithData<ReadonlyUint8Array>
 ): ParsedClaimDropInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.

@@ -206,7 +206,8 @@ export default function Home() {
                 ) : (
                   <div className="flex h-48 w-full flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-white/5 bg-white/[0.02] text-center px-6">
                     <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
-                      No active drops found. Initialize your first location-based bounty to begin real-world engagement.
+                      No active drops found. Initialize your first
+                      location-based bounty to begin real-world engagement.
                     </p>
                     <a
                       href="/campaign/create"
@@ -277,7 +278,14 @@ export default function Home() {
                         <path d="M20 6 9 17l-5-5" />
                       ) : (
                         <>
-                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <rect
+                            width="14"
+                            height="14"
+                            x="8"
+                            y="8"
+                            rx="2"
+                            ry="2"
+                          />
                           <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                         </>
                       )}
@@ -295,4 +303,3 @@ export default function Home() {
     </div>
   );
 }
-

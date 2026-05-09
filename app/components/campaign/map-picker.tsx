@@ -1,14 +1,19 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Circle,
   useMapEvents,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-geosearch/dist/geosearch.css";
+import { OpenStreetMapProvider, GeoSearchControl } from "leaflet-geosearch";
+import { Navigation } from "lucide-react";
 
 // Fix for Leaflet default icon issues in Next.js
 const DefaultIcon = L.icon({
@@ -29,6 +34,72 @@ interface MapPickerProps {
   onLocationChange: (lat: number, lng: number) => void;
 }
 
+function SearchField({
+  onLocationChange,
+}: {
+  onLocationChange: (lat: number, lng: number) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const provider = new OpenStreetMapProvider();
+
+    const searchControl = new (GeoSearchControl as any)({
+      provider,
+      style: "bar",
+      showMarker: false,
+      showPopup: false,
+      autoClose: true,
+      retainZoomLevel: false,
+      animateZoom: true,
+      keepResult: true,
+      searchLabel: "Enter_Address...",
+    });
+
+    map.addControl(searchControl);
+
+    map.on("geosearch/showlocation", (result: any) => {
+      onLocationChange(result.location.y, result.location.x);
+    });
+
+    return () => {
+      map.removeControl(searchControl);
+    };
+  }, [map, onLocationChange]);
+
+  return null;
+}
+
+function MapControls({
+  onLocationChange,
+}: {
+  onLocationChange: (lat: number, lng: number) => void;
+}) {
+  const map = useMap();
+
+  const handleLocate = () => {
+    map.locate().on("locationfound", (e) => {
+      onLocationChange(e.latlng.lat, e.latlng.lng);
+      map.flyTo(e.latlng, map.getZoom());
+    });
+  };
+
+  return (
+    <div className="absolute bottom-4 right-4 z-[1000]">
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          handleLocate();
+        }}
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-background/80 text-white backdrop-blur-md transition hover:bg-indigo-500 hover:text-white shadow-xl"
+        title="Locate Me"
+      >
+        <Navigation className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function LocationMarker({
   lat,
   lng,
@@ -45,7 +116,19 @@ function LocationMarker({
     },
   });
 
-  return <Marker position={[lat, lng]} draggable={true} />;
+  return (
+    <Marker
+      position={[lat, lng]}
+      draggable={true}
+      eventHandlers={{
+        dragend: (e) => {
+          const marker = e.target;
+          const position = marker.getLatLng();
+          onLocationChange(position.lat, position.lng);
+        },
+      }}
+    />
+  );
 }
 
 export default function MapPicker({
@@ -81,6 +164,8 @@ export default function MapPicker({
           lng={lng}
           onLocationChange={onLocationChange}
         />
+        <SearchField onLocationChange={onLocationChange} />
+        <MapControls onLocationChange={onLocationChange} />
       </MapContainer>
 
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
