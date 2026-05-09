@@ -1,10 +1,14 @@
 import { useMobileWallet } from "@wallet-ui/react-native-kit";
 import { useState } from "react";
-import { address, createNoopSigner, type TransactionSigner } from "@solana/kit";
-import { getClaimDropInstruction } from "@geodrop/client";
+import {
+  address,
+  createSolanaRpc,
+  getBase64Decoder,
+  type Transaction,
+} from "@solana/kit";
 
 export const useClaimBounty = () => {
-  const { sendTransaction, account, connect } = useMobileWallet();
+  const { signAndSendTransaction, account, connect } = useMobileWallet();
   const [status, setStatus] = useState<
     "idle" | "claiming" | "success" | "error"
   >("idle");
@@ -18,15 +22,63 @@ export const useClaimBounty = () => {
 
       setStatus("claiming");
 
-      const instruction = getClaimDropInstruction({
-        hunter: createNoopSigner(currentAccount.address) as TransactionSigner,
-        drop: address(dropAddress),
-        lat: 105000000n,
-        long: 205000000n,
+      // 1. Fetch latest blockhash
+      const rpc = createSolanaRpc("https://api.devnet.solana.com");
+      const {
+        value: { blockhash, lastValidBlockHeight },
+      } = await rpc.getLatestBlockhash().send();
+
+      // For MVP simulation
+      const lat = 105000000;
+      const long = 205000000;
+
+      // 2. Call backend API to verify location and humanity, and get partial signature
+      // Assuming Next.js is running locally. Use your local IP or 10.0.2.2 for Android emulator.
+      // E.g., 'http://10.0.2.2:3000/api/claim'
+      const response = await fetch("http://10.0.2.2:3000/api/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat,
+          long,
+          hunterPubkey: currentAccount.address,
+          dropPubkey: dropAddress,
+          blockhash,
+          lastValidBlockHeight,
+        }),
       });
 
-      const signature = await sendTransaction([instruction]);
-      console.log("[GeoDrop] Claim Success:", signature);
+      if (!response.ok) {
+        const errData = await response.json();
+        console.error("[GeoDrop] Backend Error:", errData);
+        throw new Error(errData.error || "Backend verification failed");
+      }
+
+      const { messageBase64, signatures } = await response.json();
+
+      const base64Decoder = getBase64Decoder();
+
+      // Decode backend signatures back to Uint8Array
+      const decodedSignatures: Record<string, Uint8Array> = {};
+      for (const [key, base64Sig] of Object.entries(signatures)) {
+        decodedSignatures[key] = base64Decoder.decode(base64Sig as string);
+      }
+
+      // Construct the @solana/kit Transaction object
+      const transaction: Transaction = {
+        messageBytes: base64Decoder.decode(messageBase64),
+        signatures: decodedSignatures,
+      };
+
+      // 3. Request MWA to sign and send the transaction
+      const txSignatures = await signAndSendTransaction(
+        transaction,
+        BigInt(lastValidBlockHeight)
+      );
+
+      // The signature for the fee payer (hunter) will be under their address in the returned object
+      const hunterSignature = txSignatures[currentAccount.address];
+      console.log("[GeoDrop] Claim Success:", hunterSignature);
       setStatus("success");
     } catch (e) {
       console.error("[GeoDrop] Claim Error:", e);
