@@ -54,6 +54,7 @@ pub mod vault {
 
     pub fn initialize_drop(
         ctx: Context<InitializeDrop>,
+        backend_authority: Pubkey,
         lat: i64,
         long: i64,
         radius: u64,
@@ -61,6 +62,7 @@ pub mod vault {
     ) -> Result<()> {
         let drop = &mut ctx.accounts.drop;
         drop.sponsor = ctx.accounts.sponsor.key();
+        drop.backend_authority = backend_authority;
         drop.latitude = lat;
         drop.longitude = long;
         drop.radius = radius;
@@ -121,7 +123,7 @@ pub struct InitializeDrop<'info> {
     #[account(
         init,
         payer = sponsor,
-        space = 8 + 32 + 8 + 8 + 8 + 8, // disc + pubkey + i64 + i64 + u64 + u64
+        space = 8 + 32 + 32 + 8 + 8 + 8 + 8, // disc + sponsor + backend_authority + i64 + i64 + u64 + u64
         seeds = [b"drop", sponsor.key().as_ref()],
         bump
     )]
@@ -133,11 +135,13 @@ pub struct InitializeDrop<'info> {
 pub struct ClaimDrop<'info> {
     #[account(mut)]
     pub hunter: Signer<'info>,
+    pub backend_authority: Signer<'info>,
     #[account(
         mut,
         close = hunter,
         seeds = [b"drop", drop.sponsor.as_ref()],
         bump,
+        has_one = backend_authority @ VaultError::InvalidAuthority,
     )]
     pub drop: Account<'info, Drop>,
     pub system_program: Program<'info, System>,
@@ -146,6 +150,7 @@ pub struct ClaimDrop<'info> {
 #[account]
 pub struct Drop {
     pub sponsor: Pubkey,
+    pub backend_authority: Pubkey,
     pub latitude: i64,
     pub longitude: i64,
     pub radius: u64,
@@ -160,4 +165,6 @@ pub enum VaultError {
     InvalidAmount,
     #[msg("Hunter is out of range")]
     OutOfRange,
+    #[msg("Invalid backend authority")]
+    InvalidAuthority,
 }

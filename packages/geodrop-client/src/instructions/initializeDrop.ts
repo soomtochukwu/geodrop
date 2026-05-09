@@ -10,6 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressDecoder,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getI64Decoder,
@@ -79,6 +81,7 @@ export type InitializeDropInstruction<
 
 export type InitializeDropInstructionData = {
   discriminator: ReadonlyUint8Array;
+  backendAuthority: Address;
   lat: bigint;
   long: bigint;
   radius: bigint;
@@ -86,6 +89,7 @@ export type InitializeDropInstructionData = {
 };
 
 export type InitializeDropInstructionDataArgs = {
+  backendAuthority: Address;
   lat: number | bigint;
   long: number | bigint;
   radius: number | bigint;
@@ -96,6 +100,7 @@ export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<Init
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["backendAuthority", getAddressEncoder()],
       ["lat", getI64Encoder()],
       ["long", getI64Encoder()],
       ["radius", getU64Encoder()],
@@ -108,6 +113,7 @@ export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<Init
 export function getInitializeDropInstructionDataDecoder(): FixedSizeDecoder<InitializeDropInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["backendAuthority", getAddressDecoder()],
     ["lat", getI64Decoder()],
     ["long", getI64Decoder()],
     ["radius", getU64Decoder()],
@@ -133,6 +139,7 @@ export type InitializeDropAsyncInput<
   sponsor: TransactionSigner<TAccountSponsor>;
   drop?: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
+  backendAuthority: InitializeDropInstructionDataArgs["backendAuthority"];
   lat: InitializeDropInstructionDataArgs["lat"];
   long: InitializeDropInstructionDataArgs["long"];
   radius: InitializeDropInstructionDataArgs["radius"];
@@ -214,6 +221,7 @@ export type InitializeDropInput<
   sponsor: TransactionSigner<TAccountSponsor>;
   drop: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
+  backendAuthority: InitializeDropInstructionDataArgs["backendAuthority"];
   lat: InitializeDropInstructionDataArgs["lat"];
   long: InitializeDropInstructionDataArgs["long"];
   radius: InitializeDropInstructionDataArgs["radius"];

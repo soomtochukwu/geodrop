@@ -20,9 +20,12 @@ export const VAULT_ERROR__VAULT_ALREADY_EXISTS = 0x1770; // 6000
 export const VAULT_ERROR__INVALID_AMOUNT = 0x1771; // 6001
 /** OutOfRange: Hunter is out of range */
 export const VAULT_ERROR__OUT_OF_RANGE = 0x1772; // 6002
+/** InvalidAuthority: Invalid backend authority */
+export const VAULT_ERROR__INVALID_AUTHORITY = 0x1773; // 6003
 
 export type VaultError =
   | typeof VAULT_ERROR__INVALID_AMOUNT
+  | typeof VAULT_ERROR__INVALID_AUTHORITY
   | typeof VAULT_ERROR__OUT_OF_RANGE
   | typeof VAULT_ERROR__VAULT_ALREADY_EXISTS;
 
@@ -30,6 +33,7 @@ let vaultErrorMessages: Record<VaultError, string> | undefined;
 if (process.env.NODE_ENV !== "production") {
   vaultErrorMessages = {
     [VAULT_ERROR__INVALID_AMOUNT]: `Invalid amount`,
+    [VAULT_ERROR__INVALID_AUTHORITY]: `Invalid backend authority`,
     [VAULT_ERROR__OUT_OF_RANGE]: `Hunter is out of range`,
     [VAULT_ERROR__VAULT_ALREADY_EXISTS]: `Vault already exists`,
   };

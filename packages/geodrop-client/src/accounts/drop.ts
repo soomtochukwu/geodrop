@@ -50,6 +50,7 @@ export function getDropDiscriminatorBytes() {
 export type Drop = {
   discriminator: ReadonlyUint8Array;
   sponsor: Address;
+  backendAuthority: Address;
   latitude: bigint;
   longitude: bigint;
   radius: bigint;
@@ -58,6 +59,7 @@ export type Drop = {
 
 export type DropArgs = {
   sponsor: Address;
+  backendAuthority: Address;
   latitude: number | bigint;
   longitude: number | bigint;
   radius: number | bigint;
@@ -70,6 +72,7 @@ export function getDropEncoder(): FixedSizeEncoder<DropArgs> {
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["sponsor", getAddressEncoder()],
+      ["backendAuthority", getAddressEncoder()],
       ["latitude", getI64Encoder()],
       ["longitude", getI64Encoder()],
       ["radius", getU64Encoder()],
@@ -84,6 +87,7 @@ export function getDropDecoder(): FixedSizeDecoder<Drop> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["sponsor", getAddressDecoder()],
+    ["backendAuthority", getAddressDecoder()],
     ["latitude", getI64Decoder()],
     ["longitude", getI64Decoder()],
     ["radius", getU64Decoder()],
@@ -150,5 +154,5 @@ export async function fetchAllMaybeDrop(
 }
 
 export function getDropSize(): number {
-  return 72;
+  return 104;
 }

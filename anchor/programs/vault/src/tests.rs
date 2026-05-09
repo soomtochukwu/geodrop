@@ -58,12 +58,14 @@ mod tests {
     fn create_initialize_drop_ix(
         sponsor: &Pubkey,
         drop_pda: &Pubkey,
+        backend_authority: &Pubkey,
         lat: i64,
         long: i64,
         radius: u64,
         amount: u64,
     ) -> Instruction {
         let mut data = sighash("global", "initialize_drop").to_vec();
+        data.extend_from_slice(&backend_authority.to_bytes());
         data.extend_from_slice(&lat.to_le_bytes());
         data.extend_from_slice(&long.to_le_bytes());
         data.extend_from_slice(&radius.to_le_bytes());
@@ -82,6 +84,7 @@ mod tests {
 
     fn create_claim_drop_ix(
         hunter: &Pubkey,
+        backend_authority: &Pubkey,
         drop_pda: &Pubkey,
         lat: i64,
         long: i64,
@@ -94,6 +97,7 @@ mod tests {
             program_id: PROGRAM_ID,
             accounts: vec![
                 AccountMeta::new(*hunter, true),
+                AccountMeta::new(*backend_authority, true),
                 AccountMeta::new(*drop_pda, false),
                 AccountMeta::new_readonly(system_program::ID, false),
             ],
@@ -109,6 +113,7 @@ mod tests {
 
         let sponsor = Keypair::new();
         let hunter = Keypair::new();
+        let backend_authority = Keypair::new();
         svm.airdrop(&sponsor.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
         svm.airdrop(&hunter.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
 
@@ -120,7 +125,7 @@ mod tests {
         let radius = 10u64;
         let amount = LAMPORTS_PER_SOL;
 
-        let init_ix = create_initialize_drop_ix(&sponsor.pubkey(), &drop_pda, lat, long, radius, amount);
+        let init_ix = create_initialize_drop_ix(&sponsor.pubkey(), &drop_pda, &backend_authority.pubkey(), lat, long, radius, amount);
         let blockhash = svm.latest_blockhash();
         let init_tx = Transaction::new_signed_with_payer(
             &[init_ix],
@@ -137,12 +142,12 @@ mod tests {
         // Claim drop from (105, 205) - Distance squared is 5^2 + 5^2 = 50. Radius squared is 100. Should pass.
         let claim_lat = 105i64;
         let claim_long = 205i64;
-        let claim_ix = create_claim_drop_ix(&hunter.pubkey(), &drop_pda, claim_lat, claim_long);
+        let claim_ix = create_claim_drop_ix(&hunter.pubkey(), &backend_authority.pubkey(), &drop_pda, claim_lat, claim_long);
         let blockhash = svm.latest_blockhash();
         let claim_tx = Transaction::new_signed_with_payer(
             &[claim_ix],
             Some(&hunter.pubkey()),
-            &[&hunter],
+            &[&hunter, &backend_authority],
             blockhash,
         );
         svm.send_transaction(claim_tx).unwrap();
@@ -164,6 +169,7 @@ mod tests {
 
         let sponsor = Keypair::new();
         let hunter = Keypair::new();
+        let backend_authority = Keypair::new();
         svm.airdrop(&sponsor.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
         svm.airdrop(&hunter.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
 
@@ -174,7 +180,7 @@ mod tests {
         let radius = 10u64;
         let amount = LAMPORTS_PER_SOL;
 
-        let init_ix = create_initialize_drop_ix(&sponsor.pubkey(), &drop_pda, lat, long, radius, amount);
+        let init_ix = create_initialize_drop_ix(&sponsor.pubkey(), &drop_pda, &backend_authority.pubkey(), lat, long, radius, amount);
         let blockhash = svm.latest_blockhash();
         let init_tx = Transaction::new_signed_with_payer(
             &[init_ix],
@@ -187,12 +193,12 @@ mod tests {
         // Claim drop from (120, 220) - Distance squared is 20^2 + 20^2 = 800. Radius squared is 100. Should fail.
         let claim_lat = 120i64;
         let claim_long = 220i64;
-        let claim_ix = create_claim_drop_ix(&hunter.pubkey(), &drop_pda, claim_lat, claim_long);
+        let claim_ix = create_claim_drop_ix(&hunter.pubkey(), &backend_authority.pubkey(), &drop_pda, claim_lat, claim_long);
         let blockhash = svm.latest_blockhash();
         let claim_tx = Transaction::new_signed_with_payer(
             &[claim_ix],
             Some(&hunter.pubkey()),
-            &[&hunter],
+            &[&hunter, &backend_authority],
             blockhash,
         );
 

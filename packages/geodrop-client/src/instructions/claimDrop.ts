@@ -27,6 +27,7 @@ import {
   type InstructionWithAccounts,
   type InstructionWithData,
   type ReadonlyAccount,
+  type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
@@ -46,6 +47,7 @@ export function getClaimDropDiscriminatorBytes() {
 export type ClaimDropInstruction<
   TProgram extends string = typeof VAULT_PROGRAM_ADDRESS,
   TAccountHunter extends string | AccountMeta<string> = string,
+  TAccountBackendAuthority extends string | AccountMeta<string> = string,
   TAccountDrop extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
@@ -58,6 +60,10 @@ export type ClaimDropInstruction<
         ? WritableSignerAccount<TAccountHunter> &
             AccountSignerMeta<TAccountHunter>
         : TAccountHunter,
+      TAccountBackendAuthority extends string
+        ? ReadonlySignerAccount<TAccountBackendAuthority> &
+            AccountSignerMeta<TAccountBackendAuthority>
+        : TAccountBackendAuthority,
       TAccountDrop extends string
         ? WritableAccount<TAccountDrop>
         : TAccountDrop,
@@ -110,10 +116,12 @@ export function getClaimDropInstructionDataCodec(): FixedSizeCodec<
 
 export type ClaimDropInput<
   TAccountHunter extends string = string,
+  TAccountBackendAuthority extends string = string,
   TAccountDrop extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   hunter: TransactionSigner<TAccountHunter>;
+  backendAuthority: TransactionSigner<TAccountBackendAuthority>;
   drop: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
   lat: ClaimDropInstructionDataArgs["lat"];
@@ -122,15 +130,22 @@ export type ClaimDropInput<
 
 export function getClaimDropInstruction<
   TAccountHunter extends string,
+  TAccountBackendAuthority extends string,
   TAccountDrop extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof VAULT_PROGRAM_ADDRESS,
 >(
-  input: ClaimDropInput<TAccountHunter, TAccountDrop, TAccountSystemProgram>,
+  input: ClaimDropInput<
+    TAccountHunter,
+    TAccountBackendAuthority,
+    TAccountDrop,
+    TAccountSystemProgram
+  >,
   config?: { programAddress?: TProgramAddress },
 ): ClaimDropInstruction<
   TProgramAddress,
   TAccountHunter,
+  TAccountBackendAuthority,
   TAccountDrop,
   TAccountSystemProgram
 > {
@@ -140,6 +155,10 @@ export function getClaimDropInstruction<
   // Original accounts.
   const originalAccounts = {
     hunter: { value: input.hunter ?? null, isWritable: true },
+    backendAuthority: {
+      value: input.backendAuthority ?? null,
+      isWritable: false,
+    },
     drop: { value: input.drop ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -161,6 +180,7 @@ export function getClaimDropInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.hunter),
+      getAccountMeta(accounts.backendAuthority),
       getAccountMeta(accounts.drop),
       getAccountMeta(accounts.systemProgram),
     ],
@@ -171,6 +191,7 @@ export function getClaimDropInstruction<
   } as ClaimDropInstruction<
     TProgramAddress,
     TAccountHunter,
+    TAccountBackendAuthority,
     TAccountDrop,
     TAccountSystemProgram
   >);
@@ -183,8 +204,9 @@ export type ParsedClaimDropInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     hunter: TAccountMetas[0];
-    drop: TAccountMetas[1];
-    systemProgram: TAccountMetas[2];
+    backendAuthority: TAccountMetas[1];
+    drop: TAccountMetas[2];
+    systemProgram: TAccountMetas[3];
   };
   data: ClaimDropInstructionData;
 };
@@ -197,7 +219,7 @@ export function parseClaimDropInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedClaimDropInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -211,6 +233,7 @@ export function parseClaimDropInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       hunter: getNextAccount(),
+      backendAuthority: getNextAccount(),
       drop: getNextAccount(),
       systemProgram: getNextAccount(),
     },
