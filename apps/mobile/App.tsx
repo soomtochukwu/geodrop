@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   StyleSheet,
@@ -8,21 +8,32 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
-import MapView, { Marker, Circle } from "./components/Map";
-import { MobileWalletProvider } from "@wallet-ui/react-native-kit";
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from "./components/Map";
+import { WalletProvider } from "./components/WalletProvider";
 import { useLocation } from "./hooks/useLocation";
 import { useClaimBounty } from "./hooks/useClaimBounty";
 import { useDrops } from "./hooks/useDrops";
-import { lamportsToSolString, type Drop } from "@geodrop/client";
-import { lamports, type Account } from "@solana/kit";
+import { type Drop } from "@geodrop/client";
+import { type Account } from "@solana/kit";
 
 const { width, height } = Dimensions.get("window");
+
+function formatLamportsToSol(amount: bigint | number | string) {
+  const lamportsValue = BigInt(amount);
+  const sol = lamportsValue / 1_000_000_000n;
+  const fractional = (lamportsValue % 1_000_000_000n)
+    .toString()
+    .padStart(9, "0")
+    .replace(/0+$/, "");
+
+  return fractional ? `${sol}.${fractional}` : sol.toString();
+}
 
 function HunterApp() {
   console.log("[GeoDrop] HunterApp Render Start");
   const { location } = useLocation();
   const { drops, loading: loadingDrops } = useDrops();
-  const { claimBounty, status } = useClaimBounty();
+  const { claimBounty, status, isWalletAvailable } = useClaimBounty();
 
   useEffect(() => {
     console.log("[GeoDrop] HunterApp Mounted");
@@ -84,6 +95,7 @@ function HunterApp() {
     nearestDrop &&
     distance !== null &&
     distance <= Number(nearestDrop.data.radius);
+  const claimDisabled = !inRange || status === "claiming" || !isWalletAvailable;
 
   return (
     <View style={styles.container}>
@@ -111,6 +123,7 @@ function HunterApp() {
             showsUserLocation={true}
             showsMyLocationButton={true}
             showsCompass={false}
+            provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
             userInterfaceStyle="dark"
             initialRegion={{
               latitude: location.coords.latitude,
@@ -128,8 +141,8 @@ function HunterApp() {
                 <React.Fragment key={drop.address}>
                   <Marker
                     coordinate={{ latitude: dropLat, longitude: dropLng }}
-                    title={`Bounty: ${lamportsToSolString(
-                      lamports(drop.data.amount)
+                    title={`Bounty: ${formatLamportsToSol(
+                      drop.data.amount
                     )} SOL`}
                     description={`Radius: ${drop.data.radius}m`}
                     pinColor={isNearest ? "#6366f1" : "#a1a1aa"}
@@ -172,8 +185,8 @@ function HunterApp() {
       </View>
 
       <TouchableOpacity
-        style={[styles.button, !inRange && styles.buttonDisabled]}
-        disabled={!inRange || status === "claiming"}
+        style={[styles.button, claimDisabled && styles.buttonDisabled]}
+        disabled={claimDisabled}
         onPress={() => {
           if (nearestDrop && location) {
             claimBounty(
@@ -185,15 +198,21 @@ function HunterApp() {
         }}
       >
         <Text style={styles.buttonText}>
-          {status === "claiming"
-            ? "SIGNING_ON_MWA..."
-            : status === "success"
-              ? "BOUNTY_CLAIMED!"
-              : inRange
-                ? "CLAIM_BOUNTY"
-                : "OUT_OF_RANGE"}
+          {!isWalletAvailable
+            ? "ANDROID_WALLET_REQUIRED"
+            : status === "claiming"
+              ? "SIGNING_ON_MWA..."
+              : status === "success"
+                ? "BOUNTY_CLAIMED!"
+                : inRange
+                  ? "CLAIM_BOUNTY"
+                  : "OUT_OF_RANGE"}
         </Text>
       </TouchableOpacity>
+
+      {!isWalletAvailable && (
+        <Text style={styles.syncText}>IOS_PREVIEW_MODE_CLAIMS_DISABLED</Text>
+      )}
 
       {loadingDrops && (
         <Text style={styles.syncText}>SYNCING_WITH_BLOCKCHAIN...</Text>
@@ -203,44 +222,10 @@ function HunterApp() {
 }
 
 export default function App() {
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    const errorHandler = (e: any) => {
-      console.error("[GeoDrop] Global Error:", e);
-      setHasError(true);
-    };
-    window.addEventListener("error", errorHandler);
-    return () => window.removeEventListener("error", errorHandler);
-  }, []);
-
-  if (hasError) {
-    return (
-      <View style={[styles.container, { justifyContent: "center" }]}>
-        <Text style={{ color: "red", fontFamily: "monospace" }}>
-          BOOT_CRITICAL_ERROR
-        </Text>
-        <Text style={{ color: "white", fontSize: 10, marginTop: 20 }}>
-          Check browser console for logs.
-        </Text>
-      </View>
-    );
-  }
-
   return (
-    <MobileWalletProvider
-      cluster={{
-        id: "solana:devnet",
-        url: "https://api.devnet.solana.com",
-      }}
-      identity={{
-        name: "GeoDrop",
-        uri: "https://geodrop.xyz",
-        icon: "favicon.png",
-      }}
-    >
+    <WalletProvider>
       <HunterApp />
-    </MobileWalletProvider>
+    </WalletProvider>
   );
 }
 

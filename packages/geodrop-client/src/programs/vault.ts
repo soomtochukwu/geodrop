@@ -28,29 +28,29 @@ import {
 } from "../instructions";
 
 export const VAULT_PROGRAM_ADDRESS =
-  "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko" as Address<"4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko">;
+  "Eb7gjz58TZ6HVo4ruNddNzFFpR8kpzKHVkE9foGPXp4L" as Address<"Eb7gjz58TZ6HVo4ruNddNzFFpR8kpzKHVkE9foGPXp4L">;
 
 export enum VaultAccount {
   Drop,
 }
 
 export function identifyVaultAccount(
-  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): VaultAccount {
   const data = "data" in account ? account.data : account;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([56, 174, 80, 200, 182, 146, 223, 35])
+        new Uint8Array([56, 174, 80, 200, 182, 146, 223, 35]),
       ),
-      0
+      0,
     )
   ) {
     return VaultAccount.Drop;
   }
   throw new Error(
-    "The provided account could not be identified as a vault account."
+    "The provided account could not be identified as a vault account.",
   );
 }
 
@@ -62,16 +62,16 @@ export enum VaultInstruction {
 }
 
 export function identifyVaultInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
+  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): VaultInstruction {
   const data = "data" in instruction ? instruction.data : instruction;
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([157, 29, 89, 14, 81, 203, 107, 58])
+        new Uint8Array([157, 29, 89, 14, 81, 203, 107, 58]),
       ),
-      0
+      0,
     )
   ) {
     return VaultInstruction.ClaimDrop;
@@ -80,9 +80,9 @@ export function identifyVaultInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182])
+        new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182]),
       ),
-      0
+      0,
     )
   ) {
     return VaultInstruction.Deposit;
@@ -91,9 +91,9 @@ export function identifyVaultInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([189, 174, 162, 164, 253, 144, 182, 186])
+        new Uint8Array([189, 174, 162, 164, 253, 144, 182, 186]),
       ),
-      0
+      0,
     )
   ) {
     return VaultInstruction.InitializeDrop;
@@ -102,20 +102,20 @@ export function identifyVaultInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34])
+        new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34]),
       ),
-      0
+      0,
     )
   ) {
     return VaultInstruction.Withdraw;
   }
   throw new Error(
-    "The provided instruction could not be identified as a vault instruction."
+    "The provided instruction could not be identified as a vault instruction.",
   );
 }
 
 export type ParsedVaultInstruction<
-  TProgram extends string = "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko",
+  TProgram extends string = "Eb7gjz58TZ6HVo4ruNddNzFFpR8kpzKHVkE9foGPXp4L",
 > =
   | ({
       instructionType: VaultInstruction.ClaimDrop;
@@ -131,7 +131,7 @@ export type ParsedVaultInstruction<
     } & ParsedWithdrawInstruction<TProgram>);
 
 export function parseVaultInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>
+  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedVaultInstruction<TProgram> {
   const instructionType = identifyVaultInstruction(instruction);
   switch (instructionType) {
@@ -165,7 +165,7 @@ export function parseVaultInstruction<TProgram extends string>(
     }
     default:
       throw new Error(
-        `Unrecognized instruction type: ${instructionType as string}`
+        `Unrecognized instruction type: ${instructionType as string}`,
       );
   }
 }

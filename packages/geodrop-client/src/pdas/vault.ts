@@ -20,10 +20,10 @@ export type VaultSeeds = {
 
 export async function findVaultPda(
   seeds: VaultSeeds,
-  config: { programAddress?: Address | undefined } = {}
+  config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko" as Address<"4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko">,
+    programAddress = "Eb7gjz58TZ6HVo4ruNddNzFFpR8kpzKHVkE9foGPXp4L" as Address<"Eb7gjz58TZ6HVo4ruNddNzFFpR8kpzKHVkE9foGPXp4L">,
   } = config;
   return await getProgramDerivedAddress({
     programAddress,

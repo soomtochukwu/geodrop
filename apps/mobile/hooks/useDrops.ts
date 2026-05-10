@@ -2,11 +2,21 @@ import { useState, useEffect } from "react";
 import {
   createSolanaRpc,
   type Account,
-  getBase58Encoder,
+  type Address,
+  type Base58EncodedBytes,
+  type EncodedAccount,
+  getBase58Decoder,
   address,
 } from "@solana/kit";
 import { VAULT_PROGRAM_ADDRESS } from "@geodrop/client";
 import { decodeDrop, type Drop, DROP_DISCRIMINATOR } from "@geodrop/client";
+
+type ProgramAccount = {
+  pubkey: Address;
+  account: {
+    data: unknown;
+  };
+};
 
 export function useDrops() {
   const [drops, setDrops] = useState<Account<Drop>[]>([]);
@@ -17,6 +27,9 @@ export function useDrops() {
       setLoading(true);
       try {
         const rpc = createSolanaRpc("https://api.devnet.solana.com");
+        const dropDiscriminator = getBase58Decoder().decode(
+          DROP_DISCRIMINATOR
+        ) as Base58EncodedBytes;
 
         // Fetch all accounts owned by our program
         const programAccounts = await rpc
@@ -26,9 +39,7 @@ export function useDrops() {
               {
                 memcmp: {
                   offset: 0n,
-                  bytes: getBase58Encoder().encode(
-                    DROP_DISCRIMINATOR as any
-                  ) as any,
+                  bytes: dropDiscriminator,
                   encoding: "base58",
                 },
               },
@@ -36,14 +47,14 @@ export function useDrops() {
           })
           .send();
 
-        const decodedDrops: Account<Drop>[] = (programAccounts as any[]).map(
-          (account) => {
-            return decodeDrop({
-              address: account.pubkey,
-              data: account.account.data,
-            } as any);
-          }
-        );
+        const decodedDrops: Account<Drop>[] = (
+          programAccounts as unknown as ProgramAccount[]
+        ).map((account) => {
+          return decodeDrop({
+            address: account.pubkey,
+            data: account.account.data,
+          } as unknown as EncodedAccount);
+        });
 
         setDrops(decodedDrops);
       } catch (e) {
