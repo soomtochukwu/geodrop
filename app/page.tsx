@@ -91,17 +91,17 @@ export default function Home() {
           : "Airdrop failed. Try again later.",
         isRateLimited
           ? {
-            description: (
-              <a
-                href="https://faucet.solana.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Open faucet.solana.com
-              </a>
-            ),
-          }
+              description: (
+                <a
+                  href="https://faucet.solana.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  Open faucet.solana.com
+                </a>
+              ),
+            }
           : undefined
       );
     }
@@ -116,7 +116,10 @@ export default function Home() {
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-            <Link href="/" className="font-mono text-xs font-bold uppercase tracking-widest">
+            <Link
+              href="/"
+              className="font-mono text-xs font-bold uppercase tracking-widest"
+            >
               GeoDrop // Sponsor_Dashboard
             </Link>
           </div>

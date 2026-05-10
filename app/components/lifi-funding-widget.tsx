@@ -46,7 +46,7 @@ export const LiFiFundingWidget = ({
       toAmount: amount,
 
       // --- CRITICAL TESTNET CONFIG ---
-      allowTestnets: true, 
+      allowTestnets: true,
 
       // Aesthetic: Premium Cyber-Fintech
       appearance: "dark",

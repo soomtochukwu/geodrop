@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   StyleSheet,
@@ -11,26 +11,16 @@ import MapView, { Marker, Circle } from "react-native-maps";
 import { MobileWalletProvider } from "@wallet-ui/react-native-kit";
 import { useLocation } from "./hooks/useLocation";
 import { useClaimBounty } from "./hooks/useClaimBounty";
+import { useDrops } from "./hooks/useDrops";
+import { lamportsToSolString, type Drop } from "@geodrop/client";
+import { lamports, type Account } from "@solana/kit";
 
 const { width, height } = Dimensions.get("window");
 
-// Mock drop data for the MVP
-const MOCK_DROP = {
-  address: "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko", // Replace with real drop PDA when fetched
-  latitude: 37.7749, // Will be overridden by nearby user location
-  longitude: -122.4194,
-  radius: 50, // meters
-  bounty: "1.0 SOL",
-};
-
 function HunterApp() {
   const { location } = useLocation();
+  const { drops, loading: loadingDrops } = useDrops();
   const { claimBounty, status } = useClaimBounty();
-  const [distance, setDistance] = useState<number | null>(null);
-  const [dropLocation, setDropLocation] = useState({
-    latitude: MOCK_DROP.latitude,
-    longitude: MOCK_DROP.longitude,
-  });
 
   const mapRef = useRef<MapView>(null);
 
@@ -55,58 +45,46 @@ function HunterApp() {
     return R * c;
   }
 
-  useEffect(() => {
-    if (location && distance === null) {
-      // For the MVP demo, place the drop exactly 30 meters north of the user's initial location
-      // 1 degree latitude is approx 111,111 meters. 30 meters = 0.00027 degrees
-      const targetLat = location.coords.latitude + 0.00027;
-      const targetLng = location.coords.longitude;
+  // Find nearest drop and calculate distance
+  const nearestDropInfo = useMemo(() => {
+    if (!location || drops.length === 0) return null;
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDropLocation({ latitude: targetLat, longitude: targetLng });
+    let minDistance = Infinity;
+    let closestDrop: Account<Drop> | null = null;
 
-      // Calculate initial distance
+    drops.forEach((drop) => {
+      const dropLat = Number(drop.data.latitude) / 1_000_000;
+      const dropLng = Number(drop.data.longitude) / 1_000_000;
+
       const dist = calculateDistance(
         location.coords.latitude,
         location.coords.longitude,
-        targetLat,
-        targetLng
+        dropLat,
+        dropLng
       );
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDistance(dist);
 
-      // Animate map to show both user and drop
-      mapRef.current?.animateToRegion(
-        {
-          latitude: location.coords.latitude + 0.000135, // Center between user and drop
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.002,
-          longitudeDelta: 0.002,
-        },
-        1000
-      );
-    } else if (location && dropLocation) {
-      // Update distance as user moves
-      const dist = calculateDistance(
-        location.coords.latitude,
-        location.coords.longitude,
-        dropLocation.latitude,
-        dropLocation.longitude
-      );
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDistance(dist);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestDrop = drop;
+      }
+    });
 
-  const inRange = distance !== null && distance <= MOCK_DROP.radius;
+    return closestDrop ? { drop: closestDrop, distance: minDistance } : null;
+  }, [location, drops]);
+
+  const nearestDrop = nearestDropInfo?.drop as Account<Drop> | undefined;
+  const distance = nearestDropInfo?.distance ?? null;
+  const inRange =
+    nearestDrop &&
+    distance !== null &&
+    distance <= Number(nearestDrop.data.radius);
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>GEODROP // MAP_VIEW</Text>
+        <Text style={styles.headerTitle}>GEODROP // LIVE_RADAR</Text>
         <View style={styles.statusDot} />
       </View>
 
@@ -126,23 +104,39 @@ function HunterApp() {
               longitudeDelta: 0.005,
             }}
           >
-            {/* The Drop Marker */}
-            <Marker
-              coordinate={dropLocation}
-              title="Solana Bounty"
-              description={MOCK_DROP.bounty}
-              pinColor="#6366f1"
-            />
-            {/* The Drop Radius */}
-            <Circle
-              center={dropLocation}
-              radius={MOCK_DROP.radius}
-              fillColor={
-                inRange ? "rgba(0, 255, 0, 0.2)" : "rgba(99, 102, 241, 0.2)"
-              }
-              strokeColor={inRange ? "#00ff00" : "#6366f1"}
-              strokeWidth={2}
-            />
+            {drops.map((drop) => {
+              const dropLat = Number(drop.data.latitude) / 1_000_000;
+              const dropLng = Number(drop.data.longitude) / 1_000_000;
+              const isNearest = nearestDrop?.address === drop.address;
+
+              return (
+                <React.Fragment key={drop.address}>
+                  <Marker
+                    coordinate={{ latitude: dropLat, longitude: dropLng }}
+                    title={`Bounty: ${lamportsToSolString(
+                      lamports(drop.data.amount)
+                    )} SOL`}
+                    description={`Radius: ${drop.data.radius}m`}
+                    pinColor={isNearest ? "#6366f1" : "#a1a1aa"}
+                  />
+                  <Circle
+                    center={{ latitude: dropLat, longitude: dropLng }}
+                    radius={Number(drop.data.radius)}
+                    fillColor={
+                      isNearest && inRange
+                        ? "rgba(0, 255, 0, 0.2)"
+                        : "rgba(99, 102, 241, 0.1)"
+                    }
+                    strokeColor={
+                      isNearest && inRange
+                        ? "#00ff00"
+                        : "rgba(99, 102, 241, 0.3)"
+                    }
+                    strokeWidth={1}
+                  />
+                </React.Fragment>
+              );
+            })}
           </MapView>
         ) : (
           <View style={styles.loadingContainer}>
@@ -152,7 +146,9 @@ function HunterApp() {
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>[ TARGET_DISTANCE ]</Text>
+        <Text style={styles.label}>
+          [ {nearestDrop ? "NEAREST_BOUNTY" : "SCANNING_AREA"} ]
+        </Text>
         <Text
           style={[styles.distanceText, inRange && styles.distanceTextSuccess]}
         >
@@ -163,7 +159,15 @@ function HunterApp() {
       <TouchableOpacity
         style={[styles.button, !inRange && styles.buttonDisabled]}
         disabled={!inRange || status === "claiming"}
-        onPress={() => claimBounty(MOCK_DROP.address)}
+        onPress={() => {
+          if (nearestDrop && location) {
+            claimBounty(
+              nearestDrop.address,
+              location.coords.latitude,
+              location.coords.longitude
+            );
+          }
+        }}
       >
         <Text style={styles.buttonText}>
           {status === "claiming"
@@ -175,6 +179,10 @@ function HunterApp() {
                 : "OUT_OF_RANGE"}
         </Text>
       </TouchableOpacity>
+
+      {loadingDrops && (
+        <Text style={styles.syncText}>SYNCING_WITH_BLOCKCHAIN...</Text>
+      )}
     </View>
   );
 }
@@ -289,5 +297,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     letterSpacing: 2,
     fontSize: 16,
+  },
+  syncText: {
+    marginTop: 20,
+    color: "rgba(99, 102, 241, 0.5)",
+    fontFamily: "monospace",
+    fontSize: 8,
+    letterSpacing: 1,
   },
 });

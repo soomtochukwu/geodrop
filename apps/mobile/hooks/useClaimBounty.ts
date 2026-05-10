@@ -17,7 +17,7 @@ export const useClaimBounty = () => {
     "idle" | "claiming" | "success" | "error"
   >("idle");
 
-  const claimBounty = async (dropAddress: string) => {
+  const claimBounty = async (dropAddress: string, lat: number, lng: number) => {
     try {
       let currentAccount = account;
       if (!currentAccount) {
@@ -32,19 +32,18 @@ export const useClaimBounty = () => {
         value: { blockhash, lastValidBlockHeight },
       } = await rpc.getLatestBlockhash().send();
 
-      // For MVP simulation
-      const lat = 105000000;
-      const long = 205000000;
+      // Convert float coordinates to i64 micro-degrees (matching Anchor program)
+      const latMicro = Math.round(lat * 1_000_000);
+      const longMicro = Math.round(lng * 1_000_000);
 
       // 2. Call backend API to verify location and humanity, and get partial signature
-      // Assuming Next.js is running locally. Use your local IP or 10.0.2.2 for Android emulator.
-      // E.g., 'http://10.0.2.2:3000/api/claim'
+      // Note: 10.0.2.2 is the localhost address for Android emulator to reach the host machine.
       const response = await fetch("http://10.0.2.2:3000/api/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lat,
-          long,
+          lat: latMicro,
+          long: longMicro,
           hunterPubkey: currentAccount.address,
           dropPubkey: dropAddress,
           blockhash,

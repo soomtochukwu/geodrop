@@ -62,9 +62,14 @@ export default function CreateCampaignPage() {
     try {
       // 1. Log current balance to verify devnet funds
       const currentBalance = await client.rpc.getBalance(signer.address).send();
-      console.log("[GeoDrop] Current balance:", currentBalance.value.toString());
-      
-      const requiredAmount = BigInt(Math.round(parseFloat(campaignData.amount) * 1_000_000_000));
+      console.log(
+        "[GeoDrop] Current balance:",
+        currentBalance.value.toString()
+      );
+
+      const requiredAmount = BigInt(
+        Math.round(parseFloat(campaignData.amount) * 1_000_000_000)
+      );
       console.log("[GeoDrop] Attempting launch...", {
         dropAddress,
         campaignData,
@@ -72,7 +77,9 @@ export default function CreateCampaignPage() {
       });
 
       if (currentBalance.value < requiredAmount) {
-        toast.error(`Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need at least ${campaignData.amount} SOL.`);
+        toast.error(
+          `Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need at least ${campaignData.amount} SOL.`
+        );
         return;
       }
 
