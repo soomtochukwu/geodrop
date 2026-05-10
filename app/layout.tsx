@@ -15,11 +15,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Solana dApp Starter",
-  description: "A minimal Next.js starter powered by @solana/kit",
+  title: "GeoDrop | Cross-Chain Physical Bounties",
+  description: "Gamifying real-world onboarding to the Solana ecosystem. Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses.",
+  keywords: ["Solana", "Bounties", "Geolocation", "Cross-Chain", "LiFi", "Web3", "Crypto"],
+  authors: [{ name: "GeoDrop Team" }],
+  openGraph: {
+    title: "GeoDrop | Cross-Chain Physical Bounties",
+    description: "Gamifying real-world onboarding to the Solana ecosystem.",
+    url: "https://geodrop.xyz",
+    siteName: "GeoDrop",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
     apple: "/icon.svg",
   },
 };
