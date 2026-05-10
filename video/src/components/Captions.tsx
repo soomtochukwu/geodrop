@@ -3,8 +3,8 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 
 const CAPTIONS = [
   { start: 0, end: 210, text: "GeoDrop: The new standard for real-world crypto onboarding." },
-  { start: 240, end: 540, text: "Connecting brands to physical spaces with high-fidelity engagement." },
-  { start: 570, end: 1050, text: "Sponsors define territory and fund rewards from any chain via LiFi." },
+  { start: 240, end: 540, text: "Sponsors define territory by picking coordinates on an interactive map." },
+  { start: 570, end: 1050, text: "Fund your way: Bridge from any chain via LiFi or pay instantly with Native SOL." },
   { start: 1080, end: 1560, text: "Hunters discover active bounties through immersive live radar tracking." },
   { start: 1590, end: 1830, text: "Claim rewards instantly using Solana's Mobile Wallet Adapter." },
   { start: 1860, end: 2100, text: "Join the hunt at original-geodrop.vercel.app" },
