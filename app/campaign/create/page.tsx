@@ -197,20 +197,30 @@ export default function CreateCampaignPage() {
                       />
                     </div>
 
-                    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                        <p className="text-xs font-mono text-indigo-300 uppercase">
-                          Waiting for funds to land in Escrow...
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2 px-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                          OR_INITIALIZE_DIRECTLY_FROM_SOLANA_WALLET
                         </p>
                       </div>
+                      
                       <button
                         onClick={handleLaunch}
                         disabled={isSending}
-                        className="group flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-indigo-600 disabled:opacity-50"
+                        className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 py-4 text-sm font-bold text-indigo-400 transition-all hover:bg-indigo-500 hover:text-white disabled:opacity-50"
                       >
-                        {isSending ? "INITIALIZING..." : "SKIP_TO_LAUNCH"}
-                        <ArrowRight className="h-3 w-3" />
+                        {isSending ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            DEPLOYING_TO_SOLANA...
+                          </div>
+                        ) : (
+                          <>
+                            INITIALIZE_&_SKIP_FUNDING
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

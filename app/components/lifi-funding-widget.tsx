@@ -48,6 +48,9 @@ export const LiFiFundingWidget = ({
 
       // Aesthetic: Premium Cyber-Fintech
       appearance: "dark",
+      buildConfig: {
+        apiUrl: "https://testnet.li.fi/api/v1/", // Explicitly use testnet API
+      },
       theme: {
         palette: {
           primary: { main: "#6366f1" }, // Electric Indigo
@@ -73,6 +76,7 @@ export const LiFiFundingWidget = ({
       variant: "compact",
       subvariant: "default",
       sdkConfig: {
+        apiUrl: "https://testnet.li.fi/api/v1/",
         rpcUrls: {
           // Celo integration optimized (as per prompt)
           [42220]: ["https://forno.celo.org"],
