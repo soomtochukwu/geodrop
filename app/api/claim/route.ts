@@ -8,6 +8,7 @@ import {
   appendTransactionMessageInstruction,
   partiallySignTransactionMessageWithSigners,
   address,
+  getAddressEncoder,
 } from "@solana/kit";
 import { getClaimDropInstruction } from "@geodrop/client";
 
@@ -44,18 +45,14 @@ async function isHuman(walletAddress: string): Promise<boolean> {
             `POH Verdict for ${walletAddress}: ${verdict.verdict} (${verdict.confidence})`
           );
           // We require HUMAN and a confidence of at least 0.7.
-          // However, we don't want to block UNCERTAIN or users with low history in this MVP unless they are explicitly AI.
           if (verdict.verdict === "AI") return false;
-          if (verdict.verdict === "HUMAN" && verdict.confidence < 0.7) {
-            console.log("Human confidence too low, but passing for MVP.");
-          }
           return true;
         }
       } catch (err) {
         console.warn("Error polling POH:", err);
       }
     }
-    return true; // timeout — fail open (never block on infrastructure failure)
+    return true; // timeout — fail open
   } catch (error) {
     console.warn("Error initiating POH check:", error);
     return true; // fail open
@@ -74,8 +71,8 @@ export async function POST(request: Request) {
     } = await request.json();
 
     if (
-      !lat ||
-      !long ||
+      lat === undefined ||
+      long === undefined ||
       !hunterPubkey ||
       !dropPubkey ||
       !blockhash ||
@@ -88,28 +85,17 @@ export async function POST(request: Request) {
     }
 
     // --- Sybil Resistance Check (Proof of Human) ---
-    console.log(`Checking humanity of ${hunterPubkey}...`);
     const humanCheck = await isHuman(hunterPubkey);
     if (!humanCheck) {
-      console.log(`Bot detected: ${hunterPubkey}`);
       return NextResponse.json(
         { error: "Claim rejected: Bot behavior detected by POH." },
         { status: 403 }
       );
     }
 
-    // In a real app, this is where you'd query your database or an external API
-    // to verify the hunter is actually at (lat, long) and it matches the drop's radius.
-    // For this MVP, we log and proceed.
-    console.log(
-      `Verifying location for hunter ${hunterPubkey} at ${lat}, ${long}`
-    );
-
-    // Load backend authority private key from env (hex encoded for simplicity)
+    // Load backend authority private key from env
     const privateKeyHex = process.env.BACKEND_PRIVATE_KEY;
     if (!privateKeyHex) {
-      // In hackathon dev mode, just return a success so the client knows it reached here,
-      // but without the real signature it will fail on-chain unless we hardcode a test key.
       console.error("BACKEND_PRIVATE_KEY is not set.");
       return NextResponse.json(
         { error: "Backend misconfigured" },
@@ -151,12 +137,9 @@ export async function POST(request: Request) {
     const partiallySignedTx =
       await partiallySignTransactionMessageWithSigners(txMessage);
 
-    // We can return the transaction bytes directly
-    // Using an internal Solana Kit utility or simply returning the signatures and compiled message
     const base64Decoder = getBase64Decoder();
 
     // Encode the fully assembled transaction (it has signatures record but missing hunter's)
-    // To send it back to the client, we can send the signatures and the message bytes
     const signatures = partiallySignedTx.signatures;
     const serializedSignatures = Object.fromEntries(
       Object.entries(signatures).map(([key, sig]) => [

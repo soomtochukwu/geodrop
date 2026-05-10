@@ -50,20 +50,28 @@ export function getDropDiscriminatorBytes() {
 export type Drop = {
   discriminator: ReadonlyUint8Array;
   sponsor: Address;
+  campaignId: ReadonlyUint8Array;
+  name: ReadonlyUint8Array;
   backendAuthority: Address;
   latitude: bigint;
   longitude: bigint;
   radius: bigint;
-  amount: bigint;
+  rewardPerClaim: bigint;
+  maxClaims: bigint;
+  currentClaims: bigint;
 };
 
 export type DropArgs = {
   sponsor: Address;
+  campaignId: ReadonlyUint8Array;
+  name: ReadonlyUint8Array;
   backendAuthority: Address;
   latitude: number | bigint;
   longitude: number | bigint;
   radius: number | bigint;
-  amount: number | bigint;
+  rewardPerClaim: number | bigint;
+  maxClaims: number | bigint;
+  currentClaims: number | bigint;
 };
 
 /** Gets the encoder for {@link DropArgs} account data. */
@@ -72,11 +80,15 @@ export function getDropEncoder(): FixedSizeEncoder<DropArgs> {
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["sponsor", getAddressEncoder()],
+      ["campaignId", fixEncoderSize(getBytesEncoder(), 8)],
+      ["name", fixEncoderSize(getBytesEncoder(), 32)],
       ["backendAuthority", getAddressEncoder()],
       ["latitude", getI64Encoder()],
       ["longitude", getI64Encoder()],
       ["radius", getU64Encoder()],
-      ["amount", getU64Encoder()],
+      ["rewardPerClaim", getU64Encoder()],
+      ["maxClaims", getU64Encoder()],
+      ["currentClaims", getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: DROP_DISCRIMINATOR }),
   );
@@ -87,11 +99,15 @@ export function getDropDecoder(): FixedSizeDecoder<Drop> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["sponsor", getAddressDecoder()],
+    ["campaignId", fixDecoderSize(getBytesDecoder(), 8)],
+    ["name", fixDecoderSize(getBytesDecoder(), 32)],
     ["backendAuthority", getAddressDecoder()],
     ["latitude", getI64Decoder()],
     ["longitude", getI64Decoder()],
     ["radius", getU64Decoder()],
-    ["amount", getU64Decoder()],
+    ["rewardPerClaim", getU64Decoder()],
+    ["maxClaims", getU64Decoder()],
+    ["currentClaims", getU64Decoder()],
   ]);
 }
 
@@ -154,5 +170,5 @@ export async function fetchAllMaybeDrop(
 }
 
 export function getDropSize(): number {
-  return 104;
+  return 160;
 }
