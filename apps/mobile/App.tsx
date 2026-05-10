@@ -91,7 +91,7 @@ function HunterApp() {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>GEODROP // LIVE_RADAR</Text>
-        <View style={styles.statusDot} />
+        <div style={styles.statusDot} />
       </View>
 
       <View style={styles.mapContainer}>
@@ -124,14 +124,19 @@ function HunterApp() {
               const dropLng = Number(drop.data.longitude) / 1_000_000;
               const isNearest = nearestDrop?.address === drop.address;
 
+              // Decode name
+              const dropName = new TextDecoder()
+                .decode(drop.data.name)
+                .replace(/\0/g, "");
+
               return (
                 <React.Fragment key={drop.address}>
                   <Marker
                     coordinate={{ latitude: dropLat, longitude: dropLng }}
-                    title={`Bounty: ${lamportsToSolString(
-                      lamports(drop.data.amount)
-                    )} SOL`}
-                    description={`Radius: ${drop.data.radius}m`}
+                    title={dropName || "Unnamed Bounty"}
+                    description={`Reward: ${lamportsToSolString(
+                      lamports(drop.data.rewardPerClaim)
+                    )} SOL | ${Number(drop.data.maxClaims) - Number(drop.data.currentClaims)} slots left`}
                     pinColor={isNearest ? "#6366f1" : "#a1a1aa"}
                   />
                   <Circle

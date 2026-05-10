@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { lamports as sol, type Account, type Address } from "@solana/kit";
+import {
+  lamports as sol,
+  type Account,
+  address as addressHelper,
+  type ReadonlyUint8Array,
+} from "@solana/kit";
 import { toast } from "sonner";
 import { useWallet } from "./lib/wallet/context";
 import { useBalance } from "./lib/hooks/use-balance";
@@ -16,9 +20,19 @@ import { ClusterSelect } from "./components/cluster-select";
 import { WalletButton } from "./components/wallet-button";
 import { useCluster } from "./components/cluster-context";
 import { CampaignCard } from "./components/campaign/campaign-card";
-import { fetchDrop, findDropPda } from "./generated/vault";
-import { type Drop } from "./generated/vault/accounts";
-import { Plus, LayoutGrid, Loader2, Wallet } from "lucide-react";
+import { decodeDrop, VAULT_PROGRAM_ADDRESS, type Drop } from "@geodrop/client";
+import {
+  Plus,
+  LayoutGrid,
+  Loader2,
+  Wallet,
+  X,
+  Smartphone,
+  CheckCircle2,
+  Copy,
+  AlertCircle,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   const { wallet, status } = useWallet();
@@ -28,11 +42,36 @@ export default function Home() {
   const address = wallet?.account.address;
   const balance = useBalance(address);
   const [copied, setCopied] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  const [shouldPulse, setShouldPulse] = useState(false);
 
   const [myDrops, setMyDrops] = useState<Account<Drop>[]>([]);
   const [isLoadingDrops, setIsLoadingDrops] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
 
-  // Fetch campaign for the connected sponsor
+  const addLog = (msg: string) => {
+    console.log(msg);
+    setDebugLog((prev) => [...prev.slice(-6), msg]);
+  };
+
+  // Randomly trigger attention pulse for CTA
+  useEffect(() => {
+    const initialTimer = setTimeout(() => setShouldPulse(true), 2000);
+    const triggerPulse = () => {
+      setShouldPulse(true);
+      setTimeout(() => setShouldPulse(false), 1500);
+      const nextInterval =
+        Math.floor(Math.random() * (20000 - 8000 + 1)) + 8000;
+      return setTimeout(triggerPulse, nextInterval);
+    };
+    const pulseTimeout = setTimeout(triggerPulse, 10000);
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(pulseTimeout);
+    };
+  }, []);
+
+  // Fetch campaigns for the connected sponsor
   useEffect(() => {
     async function fetchCampaigns() {
       if (!address || status !== "connected") {
@@ -41,13 +80,67 @@ export default function Home() {
       }
 
       setIsLoadingDrops(true);
+      addLog(`[GeoDrop] Sponsor Detected: ${ellipsify(address, 4)}`);
+
       try {
-        const [pda] = await findDropPda({ sponsor: address });
-        // We use fetchDrop which asserts the account exists
-        const drop = await fetchDrop(client.rpc, pda);
-        setMyDrops([drop]);
+        const programAccounts = await client.rpc
+          .getProgramAccounts(addressHelper(VAULT_PROGRAM_ADDRESS), {
+            encoding: "base64",
+          })
+          .send();
+
+        addLog(
+          `[GeoDrop] RPC returned ${programAccounts.length} program accounts.`
+        );
+
+        const decodedDrops: Account<Drop>[] = programAccounts
+          .map((acc) => {
+            try {
+              const rawData = acc.account.data;
+              let data: Uint8Array;
+
+              if (Array.isArray(rawData)) {
+                // Convert base64 string to Uint8Array using browser native atob
+                const binaryString = atob(rawData[0] as string);
+                data = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  data[i] = binaryString.charCodeAt(i);
+                }
+              } else if (typeof rawData === "string") {
+                const binaryString = atob(rawData);
+                data = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  data[i] = binaryString.charCodeAt(i);
+                }
+              } else {
+                data = rawData as any;
+              }
+
+              const decoded = decodeDrop({
+                address: acc.pubkey,
+                data: data as unknown as ReadonlyUint8Array,
+              } as any);
+
+              if (decoded.data.sponsor.toString() !== address.toString()) {
+                return null;
+              }
+
+              return decoded;
+            } catch (err) {
+              return null;
+            }
+          })
+          .filter(Boolean) as Account<Drop>[];
+
+        addLog(
+          `[GeoDrop] Successfully synced ${decodedDrops.length} campaigns.`
+        );
+        setMyDrops(decodedDrops);
       } catch (e) {
-        console.log("No active campaign found for this sponsor.");
+        console.error("[GeoDrop] Dashboard sync failed:", e);
+        addLog(
+          `[GeoDrop] Error: ${e instanceof Error ? e.message : "Unknown RPC error"}`
+        );
         setMyDrops([]);
       } finally {
         setIsLoadingDrops(false);
@@ -82,28 +175,7 @@ export default function Home() {
       });
     } catch (err) {
       console.error("Airdrop failed:", err);
-      const msg = err instanceof Error ? err.message : String(err);
-      const isRateLimited =
-        msg.includes("429") || msg.includes("Internal JSON-RPC error");
-      toast.error(
-        isRateLimited
-          ? "Devnet faucet rate-limited. Use the web faucet instead."
-          : "Airdrop failed. Try again later.",
-        isRateLimited
-          ? {
-              description: (
-                <a
-                  href="https://faucet.solana.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  Open faucet.solana.com
-                </a>
-              ),
-            }
-          : undefined
-      );
+      toast.error("Airdrop failed. Try again later.");
     }
   };
 
@@ -112,13 +184,12 @@ export default function Home() {
       <GridBackground />
 
       <div className="relative z-10">
-        {/* Header */}
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
             <Link
               href="/"
-              className="font-mono text-xs font-bold uppercase tracking-widest"
+              className="font-mono text-xs font-bold uppercase tracking-widest text-white"
             >
               GeoDrop // Sponsor_Dashboard
             </Link>
@@ -131,25 +202,29 @@ export default function Home() {
         </header>
 
         <main className="mx-auto max-w-6xl px-6">
-          {/* Hero */}
           <section className="pt-6 pb-20 md:pt-8 md:pb-24">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-4">
                 <h1 className="font-black tracking-tight text-foreground">
-                  <span className="block text-6xl md:text-7xl">Geo</span>
+                  <span className="block text-6xl md:text-7xl text-white">
+                    Geo
+                  </span>
                   <span className="block text-7xl md:text-8xl text-indigo-500">
                     Drop
                   </span>
                 </h1>
                 <div className="flex flex-wrap gap-3">
-                  <a
+                  <Link
                     href="/campaign/create"
                     className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-indigo-500 px-8 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                   >
                     <Plus className="h-4 w-4" />
                     CREATE_NEW_DROP
-                  </a>
-                  <button className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-sm font-medium text-foreground transition-all hover:bg-white/10">
+                  </Link>
+                  <button
+                    onClick={() => setShowDemo(true)}
+                    className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-sm font-medium text-foreground transition-all hover:bg-white/10"
+                  >
                     Watch Demo
                   </button>
                 </div>
@@ -163,11 +238,11 @@ export default function Home() {
                   integrated LI.FI bridge.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest opacity-40">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 text-white">
                     <div className="h-1 w-1 rounded-full bg-emerald-500" />
                     <span>Cross-Chain Capable</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 text-white">
                     <div className="h-1 w-1 rounded-full bg-indigo-500" />
                     <span>Powered by Solana</span>
                   </div>
@@ -178,12 +253,11 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pb-20">
             <div className="lg:col-span-2 space-y-10">
-              {/* Dashboard Section */}
               <section className="space-y-6">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                   <div className="flex items-center gap-2">
                     <LayoutGrid className="h-4 w-4 text-indigo-400" />
-                    <h2 className="font-mono text-sm font-bold uppercase tracking-widest">
+                    <h2 className="font-mono text-sm font-bold uppercase tracking-widest text-white">
                       My_Active_Campaigns
                     </h2>
                   </div>
@@ -210,22 +284,41 @@ export default function Home() {
                 ) : (
                   <div className="flex h-48 w-full flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-white/5 bg-white/[0.02] text-center px-6">
                     <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
-                      No active drops found. Initialize your first
-                      location-based bounty to begin real-world engagement.
+                      No active drops found for this sponsor address. Ensure you
+                      are connected to the correct cluster and wallet.
                     </p>
-                    <a
+                    <Link
                       href="/campaign/create"
                       className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
                     >
-                      [+] DEPLOY_FIRST_DROP
-                    </a>
+                      [+] DEPLOY_NEW_CAMPAIGN
+                    </Link>
+                  </div>
+                )}
+
+                {/* Diagnostics */}
+                {status === "connected" && debugLog.length > 0 && (
+                  <div className="mt-8 rounded-xl border border-white/5 bg-black/40 p-4">
+                    <div className="flex items-center gap-2 mb-3 text-[10px] font-mono text-indigo-400 uppercase tracking-widest">
+                      <AlertCircle className="h-3 w-3" />
+                      REAL_TIME_DIAGNOSTICS
+                    </div>
+                    <div className="space-y-1">
+                      {debugLog.map((log, i) => (
+                        <p
+                          key={i}
+                          className="font-mono text-[9px] text-muted-foreground break-all"
+                        >
+                          {log}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 )}
               </section>
             </div>
 
             <div className="space-y-10">
-              {/* Wallet Balance Side Section */}
               {status === "connected" && address && (
                 <section className="relative w-full overflow-hidden rounded-2xl border border-white/5 bg-card/50 p-6 backdrop-blur-xl">
                   <div className="relative flex items-center justify-between">
@@ -233,7 +326,7 @@ export default function Home() {
                       <div className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10">
                         <Wallet className="h-3 w-3 text-indigo-500" />
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest font-mono">
+                      <span className="text-[10px] font-bold uppercase tracking-widest font-mono text-white">
                         Vault_Status
                       </span>
                     </div>
@@ -246,12 +339,11 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-
                   <div className="mt-6 space-y-1">
                     <p className="font-mono text-xs text-muted-foreground uppercase">
                       Liquid_SOL
                     </p>
-                    <p className="font-mono text-3xl font-black tabular-nums tracking-tighter">
+                    <p className="font-mono text-3xl font-black tabular-nums tracking-tighter text-white">
                       {balance.lamports != null
                         ? lamportsToSolString(balance.lamports)
                         : "\u2014"}
@@ -260,7 +352,6 @@ export default function Home() {
                       </span>
                     </p>
                   </div>
-
                   <button
                     onClick={handleCopy}
                     className="mt-6 flex w-full cursor-pointer items-center justify-between rounded-lg border border-white/5 bg-white/5 px-3 py-2 transition hover:bg-white/10"
@@ -268,41 +359,61 @@ export default function Home() {
                     <span className="font-mono text-[10px] text-muted-foreground">
                       {ellipsify(address, 6)}
                     </span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-3 w-3 text-muted-foreground"
-                    >
-                      {copied ? (
-                        <path d="M20 6 9 17l-5-5" />
-                      ) : (
-                        <>
-                          <rect
-                            width="14"
-                            height="14"
-                            x="8"
-                            y="8"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                        </>
-                      )}
-                    </svg>
+                    {copied ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3 w-3 text-muted-foreground" />
+                    )}
                   </button>
                 </section>
               )}
-
-              {/* Template content */}
               <VaultCard />
             </div>
           </div>
         </main>
+      </div>
+
+      {showDemo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-4xl p-4 animate-in zoom-in-95 duration-300">
+            <button
+              onClick={() => setShowDemo(false)}
+              className="absolute -top-12 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/aog9_mYFT28?si=Ch4qEukIvS_vX3C6&autoplay=1"
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-right-8 duration-700 delay-500">
+        <a
+          href="https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/87c9e5d0-1acb-4294-9308-4f2572e077da/019e1176-4e26-75fb-9fed-a07f45296657/application-87c9e5d0-1acb-4294-9308-4f2572e077da.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T105530Z&X-Amz-Expires=900&X-Amz-Signature=01d668553b37e1b7a0fa4015185b28dc5d3c51dcc21fa42a2fc47893ade7431f&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex flex-col items-end gap-2"
+        >
+          <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl text-center text-xs">
+            Download_Hunter_v1.0.apk
+          </span>
+          <div
+            className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-500/20 text-white shadow-[0_0_30px_rgba(99,102,241,0.2)] backdrop-blur-xl transition-all hover:scale-110 hover:border-indigo-500 hover:bg-indigo-500 active:scale-95 group-hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] ${shouldPulse ? "animate-cta-attention" : ""}`}
+          >
+            <Smartphone className="h-6 w-6" />
+          </div>
+        </a>
       </div>
     </div>
   );

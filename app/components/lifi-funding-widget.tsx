@@ -33,20 +33,17 @@ export const LiFiFundingWidget = ({
 }) => {
   const config = useMemo(
     () => ({
-      integrator: "lifi-sdk-playground", // Common ID for testing
+      integrator: "geodrop",
       containerStyle: {
         border: "1px solid #1a1a1a",
         borderRadius: "8px",
         boxShadow: "0 0 20px rgba(99, 102, 241, 0.05)", // Subtle indigo glow
       },
       // Location: Geodrop Sponsor Dashboard
-      fromChain: 11155111, // Sepolia Testnet
-      toChain: 115111108, // Solana Devnet
+      fromChain: 8453, // Base Mainnet
+      toChain: 115111108, // Solana
       toAddress: destinationAddress,
       toAmount: amount,
-
-      // --- CRITICAL TESTNET CONFIG ---
-      allowTestnets: true,
 
       // Aesthetic: Premium Cyber-Fintech
       appearance: "dark",
@@ -75,7 +72,6 @@ export const LiFiFundingWidget = ({
       variant: "compact",
       subvariant: "default",
       sdkConfig: {
-        apiUrl: "https://testnet.li.fi/api/v1/",
         rpcUrls: {
           [42220]: ["https://forno.celo.org"],
         },

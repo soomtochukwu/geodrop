@@ -7,15 +7,18 @@
  */
 
 import {
+  fixEncoderSize,
   getAddressEncoder,
   getBytesEncoder,
   getProgramDerivedAddress,
   type Address,
   type ProgramDerivedAddress,
+  type ReadonlyUint8Array,
 } from "@solana/kit";
 
 export type DropSeeds = {
   sponsor: Address;
+  campaignId: ReadonlyUint8Array;
 };
 
 export async function findDropPda(
@@ -30,6 +33,7 @@ export async function findDropPda(
     seeds: [
       getBytesEncoder().encode(new Uint8Array([100, 114, 111, 112])),
       getAddressEncoder().encode(seeds.sponsor),
+      fixEncoderSize(getBytesEncoder(), 8).encode(seeds.campaignId),
     ],
   });
 }
