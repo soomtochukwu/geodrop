@@ -19,9 +19,14 @@ import { lamports, type Account } from "@solana/kit";
 const { width, height } = Dimensions.get("window");
 
 function HunterApp() {
+  console.log("[GeoDrop] HunterApp Render Start");
   const { location } = useLocation();
   const { drops, loading: loadingDrops } = useDrops();
   const { claimBounty, status } = useClaimBounty();
+
+  useEffect(() => {
+    console.log("[GeoDrop] HunterApp Mounted");
+  }, []);
 
   const mapRef = useRef<MapView>(null);
 
@@ -198,6 +203,30 @@ function HunterApp() {
 }
 
 export default function App() {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const errorHandler = (e: any) => {
+      console.error("[GeoDrop] Global Error:", e);
+      setHasError(true);
+    };
+    window.addEventListener("error", errorHandler);
+    return () => window.removeEventListener("error", errorHandler);
+  }, []);
+
+  if (hasError) {
+    return (
+      <View style={[styles.container, { justifyContent: "center" }]}>
+        <Text style={{ color: "red", fontFamily: "monospace" }}>
+          BOOT_CRITICAL_ERROR
+        </Text>
+        <Text style={{ color: "white", fontSize: 10, marginTop: 20 }}>
+          Check browser console for logs.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <MobileWalletProvider
       cluster={{
