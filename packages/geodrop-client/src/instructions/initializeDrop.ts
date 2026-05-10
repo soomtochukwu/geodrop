@@ -49,7 +49,7 @@ export const INITIALIZE_DROP_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeDropDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_DROP_DISCRIMINATOR
+    INITIALIZE_DROP_DISCRIMINATOR,
   );
 }
 
@@ -114,7 +114,7 @@ export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<Init
       ["rewardPerClaim", getU64Encoder()],
       ["maxClaims", getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_DROP_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_DROP_DISCRIMINATOR }),
   );
 }
 
@@ -138,7 +138,7 @@ export function getInitializeDropInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeDropInstructionDataEncoder(),
-    getInitializeDropInstructionDataDecoder()
+    getInitializeDropInstructionDataDecoder(),
   );
 }
 
@@ -171,7 +171,7 @@ export async function getInitializeDropInstructionAsync<
     TAccountDrop,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   InitializeDropInstruction<
     TProgramAddress,
@@ -217,7 +217,7 @@ export async function getInitializeDropInstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getInitializeDropInstructionDataEncoder().encode(
-      args as InitializeDropInstructionDataArgs
+      args as InitializeDropInstructionDataArgs,
     ),
     programAddress,
   } as InitializeDropInstruction<
@@ -257,7 +257,7 @@ export function getInitializeDropInstruction<
     TAccountDrop,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeDropInstruction<
   TProgramAddress,
   TAccountSponsor,
@@ -295,7 +295,7 @@ export function getInitializeDropInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getInitializeDropInstructionDataEncoder().encode(
-      args as InitializeDropInstructionDataArgs
+      args as InitializeDropInstructionDataArgs,
     ),
     programAddress,
   } as InitializeDropInstruction<
@@ -325,7 +325,7 @@ export function parseInitializeDropInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeDropInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.

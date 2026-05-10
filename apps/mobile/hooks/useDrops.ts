@@ -2,13 +2,23 @@ import { useState, useEffect } from "react";
 import {
   createSolanaRpc,
   type Account,
-  getBase58Encoder,
+  type Address,
+  type Base58EncodedBytes,
+  type EncodedAccount,
+  getBase58Decoder,
   address,
   getBase64Encoder,
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import { VAULT_PROGRAM_ADDRESS } from "@geodrop/client";
 import { decodeDrop, type Drop, DROP_DISCRIMINATOR } from "@geodrop/client";
+
+type ProgramAccount = {
+  pubkey: Address;
+  account: {
+    data: unknown;
+  };
+};
 
 export function useDrops() {
   const [drops, setDrops] = useState<Account<Drop>[]>([]);
