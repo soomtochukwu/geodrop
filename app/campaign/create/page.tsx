@@ -8,6 +8,8 @@ import { ClusterSelect } from "../../components/cluster-select";
 import { WalletButton } from "../../components/wallet-button";
 import { LiFiFundingWidget } from "../../components/lifi-funding-widget";
 import { useWallet } from "../../lib/wallet/context";
+import { useSolanaClient } from "../../lib/solana-client-context";
+import { lamportsToSolString } from "../../lib/lamports";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
 import { findDropPda } from "../../generated/vault/pdas";
@@ -22,6 +24,7 @@ export default function CreateCampaignPage() {
   const { status, wallet, signer } = useWallet();
   const { getExplorerUrl } = useCluster();
   const { send, isSending } = useSendTransaction();
+  const client = useSolanaClient();
 
   const [step, setStep] = useState(1);
   const [fundingPath, setFundingPath] = useState<"lifi" | "sol">("sol");
@@ -56,12 +59,23 @@ export default function CreateCampaignPage() {
       return;
     }
 
-    console.log("[GeoDrop] Attempting launch...", {
-      dropAddress,
-      campaignData,
-    });
-
     try {
+      // 1. Log current balance to verify devnet funds
+      const currentBalance = await client.rpc.getBalance(signer.address).send();
+      console.log("[GeoDrop] Current balance:", currentBalance.value.toString());
+      
+      const requiredAmount = BigInt(Math.round(parseFloat(campaignData.amount) * 1_000_000_000));
+      console.log("[GeoDrop] Attempting launch...", {
+        dropAddress,
+        campaignData,
+        requiredAmount: requiredAmount.toString(),
+      });
+
+      if (currentBalance.value < requiredAmount) {
+        toast.error(`Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need at least ${campaignData.amount} SOL.`);
+        return;
+      }
+
       // Backend authority (F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR)
       const BACKEND_AUTHORITY =
         "F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR" as Address;
@@ -73,9 +87,7 @@ export default function CreateCampaignPage() {
         lat: BigInt(Math.round(campaignData.lat * 1_000_000)),
         long: BigInt(Math.round(campaignData.lng * 1_000_000)),
         radius: BigInt(campaignData.radius),
-        amount: sol(
-          BigInt(Math.round(parseFloat(campaignData.amount) * 1_000_000_000))
-        ),
+        amount: sol(requiredAmount),
       });
 
       console.log("[GeoDrop] Instruction created. Sending transaction...");

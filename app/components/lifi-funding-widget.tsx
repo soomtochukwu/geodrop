@@ -33,7 +33,7 @@ export const LiFiFundingWidget = ({
 }) => {
   const config = useMemo(
     () => ({
-      integrator: "geodrop",
+      integrator: "lifi-sdk-playground", // Common ID for testing
       containerStyle: {
         border: "1px solid #1a1a1a",
         borderRadius: "8px",
@@ -46,8 +46,6 @@ export const LiFiFundingWidget = ({
       toAmount: amount,
 
       // --- CRITICAL TESTNET CONFIG ---
-      // Note: LI.FI has restricted testnet support. 
-      // We explicitly enable it here.
       allowTestnets: true, 
 
       // Aesthetic: Premium Cyber-Fintech
@@ -77,11 +75,10 @@ export const LiFiFundingWidget = ({
       variant: "compact",
       subvariant: "default",
       sdkConfig: {
-        // Optimized for Celo/EVM/Solana devnets
+        apiUrl: "https://testnet.li.fi/api/v1/",
         rpcUrls: {
           [42220]: ["https://forno.celo.org"],
         },
-        preferTestnets: true, // Specific SDK flag for some environments
       },
       languages: {
         default: "en",
