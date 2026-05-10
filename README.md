@@ -18,20 +18,23 @@ Experience the hunt on your Android device:
 
 ### 1. Web Portal (The Sponsor)
 
-- **Campaign Creation:** A brand representative visits the GeoDrop web portal and selects a physical location on an interactive map.
+- **Campaign Creation:** A brand representative visits the GeoDrop web portal and selects a physical location on an interactive map using the integrated **Location Search** and **Locate Me** features.
 - **Bounty Scaling:** The sponsor defines the **number of possible winners** and the **reward per claim** (e.g., 50 winners at 0.1 SOL each).
-- **Funding (Cross-Chain):** The sponsor enters the total reward amount. If their funds are on an EVM chain, they use the integrated **LiFi widget** to bridge and swap assets directly into the unique campaign escrow PDA.
-- **Initialization:** Once funds arrive, the portal initializes the drop on the Solana Anchor program, locking in the territory and rewards.
+- **Flexible Funding:** Sponsors choose their preferred funding path:
+  - **Direct Solana Pay:** Fund the bounty pool instantly using SOL from their connected Solana wallet.
+  - **Cross-Chain Bridge:** Use the integrated **LiFi widget** to bridge and swap assets from EVM mainnets (Base, Ethereum, etc.) directly into the campaign escrow.
+- **Initialization:** The portal generates a unique **Campaign ID** and initializes the drop on the Solana Anchor program, locking in the territory and rewards.
+- **Sponsor Dashboard:** Track all active campaigns in real-time with **live progress bars** showing claim status and remaining pool balances fetched directly from the blockchain.
 
 ### 2. Mobile App (The Hunter)
 
-- **Discovery:** A user opens the GeoDrop app and sees a real-time "Pokémon GO" style map populated with active bounty markers, including the number of remaining claims.
-- **The Hunt:** The user physically walks toward a bounty marker. The app uses the Haversine formula to calculate and display the live distance to the target.
+- **Discovery:** A user opens the GeoDrop app and sees a real-time "Pokémon GO" style map populated with active bounty markers. Markers explicitly display the **number of remaining winner slots**.
+- **The Hunt:** The user physically walks toward a bounty marker. The app uses the Haversine formula to calculate and display the live distance to the target in real-time.
 - **Verification:** When the user enters the drop radius (e.g., 50 meters), the "Claim" button becomes active.
-- **Security & Anti-Bot:** Upon pressing "Claim", the app sends the device's GPS coordinates to the GeoDrop backend. The backend performs two checks:
-  1.  **Sybil Resistance:** It verifies the wallet's humanity using the **Proof of Human (POH) API**.
+- **Security & Anti-Bot:** Upon pressing "Claim", the app sends the device's actual GPS coordinates to the GeoDrop backend. The backend performs two checks:
+  1.  **Sybil Resistance:** It verifies the wallet's humanity using the **Proof of Human (POH) API** to block bot farms.
   2.  **Oracle Signature:** It confirms the coordinates are within the target radius and returns a cryptographic **ed25519 signature**.
-- **On-Chain Claim:** The app triggers the **Mobile Wallet Adapter (MWA)**. The user signs a transaction that includes the backend's proof. The Solana program verifies the signature and transfers a portion of the bounty pool directly to the user. The campaign remains active until the maximum number of claims is reached.
+- **On-Chain Claim:** The app triggers the **Mobile Wallet Adapter (MWA)**. The user signs a transaction that includes the backend's proof. The Solana program verifies the signature and transfers a portion of the bounty pool directly to the user. The campaign remains active for others until the maximum number of claims is reached.
 
 ## Technical Architecture
 
