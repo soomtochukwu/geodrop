@@ -6,6 +6,7 @@ import {
   View,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import { MobileWalletProvider } from "@wallet-ui/react-native-kit";
@@ -89,7 +90,16 @@ function HunterApp() {
       </View>
 
       <View style={styles.mapContainer}>
-        {location ? (
+        {Platform.OS === "web" ? (
+          <View style={styles.webFallback}>
+            <Text style={styles.loadingText}>
+              MAP_VIEW_NOT_SUPPORTED_ON_WEB
+            </Text>
+            <Text style={[styles.loadingText, { marginTop: 10, fontSize: 10 }]}>
+              PLEASE_USE_ANDROID_APK_FOR_FULL_EXPERIENCE
+            </Text>
+          </View>
+        ) : location ? (
           <MapView
             ref={mapRef}
             style={styles.map}
@@ -244,6 +254,14 @@ const styles = StyleSheet.create({
   map: {
     width: "100%",
     height: "100%",
+  },
+  webFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#111",
+    padding: 20,
+    textAlign: "center",
   },
   loadingContainer: {
     flex: 1,

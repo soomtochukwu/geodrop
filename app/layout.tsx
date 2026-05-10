@@ -16,8 +16,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "GeoDrop | Cross-Chain Physical Bounties",
-  description: "Gamifying real-world onboarding to the Solana ecosystem. Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses.",
-  keywords: ["Solana", "Bounties", "Geolocation", "Cross-Chain", "LiFi", "Web3", "Crypto"],
+  description:
+    "Gamifying real-world onboarding to the Solana ecosystem. Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses.",
+  keywords: [
+    "Solana",
+    "Bounties",
+    "Geolocation",
+    "Cross-Chain",
+    "LiFi",
+    "Web3",
+    "Crypto",
+  ],
   authors: [{ name: "GeoDrop Team" }],
   openGraph: {
     title: "GeoDrop | Cross-Chain Physical Bounties",
