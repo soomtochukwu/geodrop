@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { lamports as sol, type Account, type Address } from "@solana/kit";
 import { toast } from "sonner";
 import { useWallet } from "./lib/wallet/context";
@@ -115,9 +116,9 @@ export default function Home() {
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-            <a href="/" className="font-mono text-xs font-bold uppercase tracking-widest">
+            <Link href="/" className="font-mono text-xs font-bold uppercase tracking-widest">
               GeoDrop // Sponsor_Dashboard
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

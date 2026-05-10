@@ -44,13 +44,14 @@ export const LiFiFundingWidget = ({
       toChain: 115111108, // Solana Devnet
       toAddress: destinationAddress,
       toAmount: amount,
-      allowTestnets: true,
+
+      // --- CRITICAL TESTNET CONFIG ---
+      // Note: LI.FI has restricted testnet support. 
+      // We explicitly enable it here.
+      allowTestnets: true, 
 
       // Aesthetic: Premium Cyber-Fintech
       appearance: "dark",
-      buildConfig: {
-        apiUrl: "https://testnet.li.fi/api/v1/", // Explicitly use testnet API
-      },
       theme: {
         palette: {
           primary: { main: "#6366f1" }, // Electric Indigo
@@ -76,11 +77,11 @@ export const LiFiFundingWidget = ({
       variant: "compact",
       subvariant: "default",
       sdkConfig: {
-        apiUrl: "https://testnet.li.fi/api/v1/",
+        // Optimized for Celo/EVM/Solana devnets
         rpcUrls: {
-          // Celo integration optimized (as per prompt)
           [42220]: ["https://forno.celo.org"],
         },
+        preferTestnets: true, // Specific SDK flag for some environments
       },
       languages: {
         default: "en",

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { GridBackground } from "../../components/grid-background";
 import { ThemeToggle } from "../../components/theme-toggle";
@@ -10,7 +11,7 @@ import { useWallet } from "../../lib/wallet/context";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
 import { findDropPda } from "../../generated/vault/pdas";
-import { type Address } from "@solana/kit";
+import { type Address, lamports as sol } from "@solana/kit";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { getInitializeDropInstruction } from "../../generated/vault/instructions";
@@ -49,12 +50,20 @@ export default function CreateCampaignPage() {
   }, [wallet?.account.address]);
 
   const handleLaunch = async () => {
-    if (!signer || !dropAddress) return;
+    if (!signer || !dropAddress) {
+      toast.error("Missing wallet or drop address.");
+      return;
+    }
+
+    console.log("[GeoDrop] Attempting launch...", {
+      dropAddress,
+      campaignData,
+    });
 
     try {
-      // Backend authority for the MVP (using a demo pubkey)
+      // Backend authority (F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR)
       const BACKEND_AUTHORITY =
-        "3VshYkZ5W465L5zXNf9Xp9W5Lq8W6X7X9P4W5Lq8W6X7" as Address;
+        "F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR" as Address;
 
       const instruction = getInitializeDropInstruction({
         sponsor: signer,
@@ -63,8 +72,10 @@ export default function CreateCampaignPage() {
         lat: BigInt(Math.round(campaignData.lat * 1_000_000)),
         long: BigInt(Math.round(campaignData.lng * 1_000_000)),
         radius: BigInt(campaignData.radius),
-        amount: BigInt(parseFloat(campaignData.amount) * 1_000_000_000),
+        amount: sol(BigInt(Math.round(parseFloat(campaignData.amount) * 1_000_000_000))),
       });
+
+      console.log("[GeoDrop] Instruction created. Sending transaction...");
 
       const signature = await send({ instructions: [instruction] });
 
@@ -78,11 +89,20 @@ export default function CreateCampaignPage() {
       });
 
       setStep(4);
-    } catch (e) {
-      console.error("Launch failed", e);
-      toast.error(
-        "Launch failed. Ensure you have enough SOL to fund the escrow."
-      );
+    } catch (e: any) {
+      console.error("[GeoDrop] Launch error:", e);
+      
+      let errorMsg = "Launch failed. Ensure you have enough SOL to fund the escrow.";
+      
+      if (e?.message?.includes("User rejected")) {
+        errorMsg = "Transaction rejected by user.";
+      } else if (e?.message?.includes("0x1")) {
+        errorMsg = "Insufficient funds for campaign + gas.";
+      } else if (e?.message) {
+        errorMsg = `Launch error: ${e.message}`;
+      }
+
+      toast.error(errorMsg);
     }
   };
 
@@ -95,9 +115,10 @@ export default function CreateCampaignPage() {
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-            <span className="font-mono text-xs font-bold uppercase tracking-widest">
+            <Link href="/" className="font-mono text-xs font-bold uppercase tracking-widest">
               GeoDrop // Sponsor_Node
-            </span>
+            </Link>
+
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -117,22 +138,20 @@ export default function CreateCampaignPage() {
             ].map((s) => (
               <div key={s.id} className="flex flex-col gap-2">
                 <span
-                  className={`font-mono text-[10px] tracking-tighter ${
-                    step === s.id
-                      ? "text-indigo-400"
-                      : step > s.id
-                        ? "text-emerald-400"
-                        : "text-muted-foreground/40"
-                  }`}
+                  className={`font-mono text-[10px] tracking-tighter ${step === s.id
+                    ? "text-indigo-400"
+                    : step > s.id
+                      ? "text-emerald-400"
+                      : "text-muted-foreground/40"
+                    }`}
                 >
                   STEP_0{s.id}
                 </span>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-widest ${
-                    step === s.id
-                      ? "text-foreground"
-                      : "text-muted-foreground/30"
-                  }`}
+                  className={`text-[10px] font-bold uppercase tracking-widest ${step === s.id
+                    ? "text-foreground"
+                    : "text-muted-foreground/30"
+                    }`}
                 >
                   {s.label}
                 </span>
@@ -204,7 +223,7 @@ export default function CreateCampaignPage() {
                           OR_INITIALIZE_DIRECTLY_FROM_SOLANA_WALLET
                         </p>
                       </div>
-                      
+
                       <button
                         onClick={handleLaunch}
                         disabled={isSending}
