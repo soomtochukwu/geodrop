@@ -7,6 +7,7 @@
     "ci": "npm run build && npm run lint && npm run format:check",
     "codama:js": "codama run js",
     "dev": "next dev",
+    "eas-build-pre-install": "corepack enable && pnpm install",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint",
