@@ -18,7 +18,7 @@ import { useCluster } from "./components/cluster-context";
 import { CampaignCard } from "./components/campaign/campaign-card";
 import { fetchDrop, findDropPda } from "./generated/vault";
 import { type Drop } from "./generated/vault/accounts";
-import { Plus, LayoutGrid, Loader2, Wallet, X } from "lucide-react";
+import { Plus, LayoutGrid, Loader2, Wallet, X, Smartphone } from "lucide-react";
 
 export default function Home() {
   const { wallet, status } = useWallet();
@@ -334,6 +334,23 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Mobile App CTA */}
+      <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-right-8 duration-700 delay-500">
+        <a
+          href="https://expo.dev/accounts/exposomto/projects/mobile/builds/2912e0c7-a52a-49ff-a3b6-604701a3768e"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex flex-col items-end gap-2"
+        >
+          <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl">
+            Download_Hunter_v1.0.apk
+          </span>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-500/20 text-white shadow-[0_0_30px_rgba(99,102,241,0.2)] backdrop-blur-xl transition-all hover:scale-110 hover:border-indigo-500 hover:bg-indigo-500 active:scale-95 group-hover:shadow-[0_0_40px_rgba(99,102,241,0.4)]">
+            <Smartphone className="h-6 w-6" />
+          </div>
+        </a>
+      </div>
     </div>
   );
 }
