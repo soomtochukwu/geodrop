@@ -1,5 +1,7 @@
 # [GeoDrop](https://original-geodrop.vercel.app/): Cross-Chain Physical Bounties
 
+![alt](https://hidden-labrador-133.convex.cloud/api/storage/5c7647f4-e71b-4882-9830-d5921d6b09b5)
+
 **"GeoDrop: Gamifying real-world onboarding to the Solana ecosystem. It's Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses."**
 
 ## What is GeoDrop?
