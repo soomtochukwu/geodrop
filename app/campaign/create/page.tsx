@@ -13,7 +13,12 @@ import { lamportsToSolString } from "../../lib/lamports";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
 import { findDropPda } from "../../generated/vault/pdas";
-import { type Address, getAddressEncoder, getBytesEncoder } from "@solana/kit";
+import {
+  type Address,
+  getAddressEncoder,
+  getBytesEncoder,
+  fixEncoderSize,
+} from "@solana/kit";
 import { CheckCircle2, ArrowRight, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { getInitializeDropInstruction } from "../../generated/vault/instructions";
@@ -29,6 +34,7 @@ export default function CreateCampaignPage() {
   const [step, setStep] = useState(1);
   const [fundingPath, setFundingPath] = useState<"lifi" | "sol">("sol");
   const [campaignData, setCampaignData] = useState({
+    name: "My GeoDrop",
     type: "SOL" as "SOL" | "SPL",
     lat: 37.7749,
     lng: -122.4194,
@@ -52,7 +58,7 @@ export default function CreateCampaignPage() {
     async function updatePda() {
       if (wallet?.account.address && campaignId) {
         try {
-          const [pda] = await findDropPda({ 
+          const [pda] = await findDropPda({
             sponsor: wallet.account.address,
             campaignId: campaignId,
           });
@@ -65,7 +71,10 @@ export default function CreateCampaignPage() {
     updatePda();
   }, [wallet?.account.address, campaignId]);
 
-  const totalPoolAmount = (parseFloat(campaignData.rewardPerWinner) * parseInt(campaignData.maxWinners)).toFixed(2);
+  const totalPoolAmount = (
+    parseFloat(campaignData.rewardPerWinner) *
+    parseInt(campaignData.maxWinners)
+  ).toFixed(2);
 
   const handleLaunch = async () => {
     if (!signer || !dropAddress) {
@@ -75,13 +84,17 @@ export default function CreateCampaignPage() {
 
     try {
       const currentBalance = await client.rpc.getBalance(signer.address).send();
-      
-      const rewardPerWinnerLamports = BigInt(Math.round(parseFloat(campaignData.rewardPerWinner) * 1_000_000_000));
+
+      const rewardPerWinnerLamports = BigInt(
+        Math.round(parseFloat(campaignData.rewardPerWinner) * 1_000_000_000)
+      );
       const maxWinnersNum = BigInt(campaignData.maxWinners);
       const totalBountyRequired = rewardPerWinnerLamports * maxWinnersNum;
 
       if (currentBalance.value < totalBountyRequired) {
-        toast.error(`Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need ${totalPoolAmount} SOL.`);
+        toast.error(
+          `Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need ${totalPoolAmount} SOL.`
+        );
         return;
       }
 
@@ -91,10 +104,17 @@ export default function CreateCampaignPage() {
         BACKEND_AUTHORITY as Address
       );
 
+      // Encode Name to 32 bytes
+      const nameEncoder = fixEncoderSize(getBytesEncoder(), 32);
+      const nameBytes = nameEncoder.encode(
+        new TextEncoder().encode(campaignData.name)
+      );
+
       const instruction = getInitializeDropInstruction({
         sponsor: signer,
         drop: dropAddress,
         campaignId: campaignId,
+        campaignName: nameBytes,
         backendAuthority: backendAuthorityBytes,
         lat: BigInt(Math.round(campaignData.lat * 1_000_000)),
         long: BigInt(Math.round(campaignData.lng * 1_000_000)),
@@ -106,7 +126,7 @@ export default function CreateCampaignPage() {
       const signature = await send({ instructions: [instruction] });
 
       toast.success("Campaign Launched!", {
-        description: "Your physical bounty pool is now live on the map.",
+        description: `"${campaignData.name}" is now live on the map.`,
         action: {
           label: "View TX",
           onClick: () =>
@@ -131,7 +151,7 @@ export default function CreateCampaignPage() {
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
             <Link
               href="/"
-              className="font-mono text-xs font-bold uppercase tracking-widest"
+              className="font-mono text-xs font-bold uppercase tracking-widest text-white"
             >
               GeoDrop // Sponsor_Node
             </Link>
@@ -172,9 +192,7 @@ export default function CreateCampaignPage() {
                 >
                   {s.label}
                 </span>
-                {step === s.id && (
-                  <div className="h-0.5 w-full bg-indigo-500" />
-                )}
+                {step === s.id && <div className="h-0.5 w-full bg-indigo-500" />}
               </div>
             ))}
           </div>
@@ -190,11 +208,15 @@ export default function CreateCampaignPage() {
 
             {step === 2 && (
               <StepParameters
+                name={campaignData.name}
                 lat={campaignData.lat}
                 lng={campaignData.lng}
                 radius={campaignData.radius}
                 rewardPerWinner={campaignData.rewardPerWinner}
                 maxWinners={campaignData.maxWinners}
+                onNameChange={(name) =>
+                  setCampaignData({ ...campaignData, name })
+                }
                 onLocationChange={(lat, lng) =>
                   setCampaignData({ ...campaignData, lat, lng })
                 }
@@ -214,12 +236,17 @@ export default function CreateCampaignPage() {
 
             {step === 3 && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 text-center sm:text-left">
                   <h1 className="font-mono text-3xl font-black uppercase tracking-tighter text-white">
-                    Fund Your Bounty <span className="text-muted-foreground/20">_</span>
+                    Fund Your Bounty{" "}
+                    <span className="text-muted-foreground/20">_</span>
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Choose how you want to fund the {totalPoolAmount} SOL reward pool.
+                    Initialize{" "}
+                    <span className="text-indigo-400 font-bold">
+                      "{campaignData.name}"
+                    </span>{" "}
+                    with {totalPoolAmount} SOL.
                   </p>
                 </div>
 
@@ -232,7 +259,9 @@ export default function CreateCampaignPage() {
                         : "border-white/5 bg-white/5 hover:border-white/10"
                     }`}
                   >
-                    <div className={`p-2 rounded-lg ${fundingPath === "sol" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}>
+                    <div
+                      className={`p-2 rounded-lg ${fundingPath === "sol" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}
+                    >
                       <CheckCircle2 className="h-4 w-4" />
                     </div>
                     <div>
@@ -253,7 +282,9 @@ export default function CreateCampaignPage() {
                         : "border-white/5 bg-white/5 hover:border-white/10"
                     }`}
                   >
-                    <div className={`p-2 rounded-lg ${fundingPath === "lifi" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}>
+                    <div
+                      className={`p-2 rounded-lg ${fundingPath === "lifi" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}
+                    >
                       <Rocket className="h-4 w-4" />
                     </div>
                     <div>
@@ -277,15 +308,19 @@ export default function CreateCampaignPage() {
                 ) : fundingPath === "sol" ? (
                   <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-8 flex flex-col items-center gap-6 text-center animate-in zoom-in-95 duration-300">
                     <div className="space-y-2">
-                      <p className="font-mono text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Ready_to_deploy</p>
+                      <p className="font-mono text-[10px] text-indigo-400 uppercase tracking-widest font-bold">
+                        Ready_to_deploy
+                      </p>
                       <h2 className="text-3xl font-black font-mono text-white">
-                        {totalPoolAmount} <span className="text-indigo-500">SOL</span>
+                        {totalPoolAmount}{" "}
+                        <span className="text-indigo-500">SOL</span>
                       </h2>
                       <p className="text-xs text-muted-foreground">
-                        {campaignData.maxWinners} winners will receive {campaignData.rewardPerWinner} SOL each.
+                        {campaignData.maxWinners} winners will receive{" "}
+                        {campaignData.rewardPerWinner} SOL each.
                       </p>
                     </div>
-                    
+
                     <button
                       onClick={handleLaunch}
                       disabled={isSending}
@@ -312,14 +347,14 @@ export default function CreateCampaignPage() {
                         amount={totalPoolAmount}
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-2 px-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
                         Once_bridged_click_launch_below
                       </p>
                     </div>
-                    
+
                     <button
                       onClick={handleLaunch}
                       disabled={isSending}
@@ -352,22 +387,31 @@ export default function CreateCampaignPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <h1 className="font-mono text-4xl font-black uppercase tracking-tighter text-white">
-                    Drop Live!
+                  <h1 className="font-mono text-4xl font-black uppercase tracking-tighter text-white text-emerald-400">
+                    "{campaignData.name}" LIVE!
                   </h1>
                   <p className="text-muted-foreground max-w-sm mx-auto text-sm">
-                    Your location-based bounty pool is now broadcasted to all hunters in the area. 
+                    Your location-based bounty pool is now broadcasted to all
+                    hunters in the area.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 w-full pt-8">
+                <div className="grid grid-cols-2 gap-4 w-full pt-8 text-white">
                   <div className="rounded-2xl border border-white/5 bg-white/5 p-4 space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-mono">Total_Reward_Pool</p>
-                    <p className="text-xl font-bold font-mono text-white">{totalPoolAmount} SOL</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-mono tracking-widest">
+                      Total_Reward_Pool
+                    </p>
+                    <p className="text-xl font-bold font-mono">
+                      {totalPoolAmount} SOL
+                    </p>
                   </div>
                   <div className="rounded-2xl border border-white/5 bg-white/5 p-4 space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-mono">Max_Winners</p>
-                    <p className="text-xl font-bold font-mono text-white">{campaignData.maxWinners}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-mono tracking-widest">
+                      Max_Winners
+                    </p>
+                    <p className="text-xl font-bold font-mono">
+                      {campaignData.maxWinners}
+                    </p>
                   </div>
                 </div>
 

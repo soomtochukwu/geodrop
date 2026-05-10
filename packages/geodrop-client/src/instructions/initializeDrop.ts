@@ -81,6 +81,7 @@ export type InitializeDropInstruction<
 export type InitializeDropInstructionData = {
   discriminator: ReadonlyUint8Array;
   campaignId: ReadonlyUint8Array;
+  campaignName: ReadonlyUint8Array;
   backendAuthority: ReadonlyUint8Array;
   lat: bigint;
   long: bigint;
@@ -91,6 +92,7 @@ export type InitializeDropInstructionData = {
 
 export type InitializeDropInstructionDataArgs = {
   campaignId: ReadonlyUint8Array;
+  campaignName: ReadonlyUint8Array;
   backendAuthority: ReadonlyUint8Array;
   lat: number | bigint;
   long: number | bigint;
@@ -104,6 +106,7 @@ export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<Init
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["campaignId", fixEncoderSize(getBytesEncoder(), 8)],
+      ["campaignName", fixEncoderSize(getBytesEncoder(), 32)],
       ["backendAuthority", fixEncoderSize(getBytesEncoder(), 32)],
       ["lat", getI64Encoder()],
       ["long", getI64Encoder()],
@@ -119,6 +122,7 @@ export function getInitializeDropInstructionDataDecoder(): FixedSizeDecoder<Init
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["campaignId", fixDecoderSize(getBytesDecoder(), 8)],
+    ["campaignName", fixDecoderSize(getBytesDecoder(), 32)],
     ["backendAuthority", fixDecoderSize(getBytesDecoder(), 32)],
     ["lat", getI64Decoder()],
     ["long", getI64Decoder()],
@@ -147,6 +151,7 @@ export type InitializeDropAsyncInput<
   drop?: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
   campaignId: InitializeDropInstructionDataArgs["campaignId"];
+  campaignName: InitializeDropInstructionDataArgs["campaignName"];
   backendAuthority: InitializeDropInstructionDataArgs["backendAuthority"];
   lat: InitializeDropInstructionDataArgs["lat"];
   long: InitializeDropInstructionDataArgs["long"];
@@ -232,6 +237,7 @@ export type InitializeDropInput<
   drop: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
   campaignId: InitializeDropInstructionDataArgs["campaignId"];
+  campaignName: InitializeDropInstructionDataArgs["campaignName"];
   backendAuthority: InitializeDropInstructionDataArgs["backendAuthority"];
   lat: InitializeDropInstructionDataArgs["lat"];
   long: InitializeDropInstructionDataArgs["long"];

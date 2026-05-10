@@ -59,6 +59,7 @@ mod tests {
         sponsor: &Pubkey,
         drop_pda: &Pubkey,
         campaign_id: [u8; 8],
+        campaign_name: [u8; 32],
         backend_authority: &Pubkey,
         lat: i64,
         long: i64,
@@ -68,6 +69,7 @@ mod tests {
     ) -> Instruction {
         let mut data = sighash("global", "initialize_drop").to_vec();
         data.extend_from_slice(&campaign_id);
+        data.extend_from_slice(&campaign_name);
         data.extend_from_slice(&backend_authority.to_bytes());
         data.extend_from_slice(&lat.to_le_bytes());
         data.extend_from_slice(&long.to_le_bytes());
@@ -124,6 +126,9 @@ mod tests {
         svm.airdrop(&hunter2.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
 
         let campaign_id = [1u8; 8];
+        let mut name = [0u8; 32];
+        name[0..13].copy_from_slice(b"Test Campaign");
+        
         let (drop_pda, _bump) = get_drop_pda(&sponsor.pubkey(), &campaign_id);
 
         let lat = 100i64;
@@ -136,6 +141,7 @@ mod tests {
             &sponsor.pubkey(), 
             &drop_pda, 
             campaign_id, 
+            name,
             &backend_authority.pubkey(), 
             lat, long, radius, reward, max_claims
         );
@@ -192,17 +198,18 @@ mod tests {
 
         let id1 = [1u8; 8];
         let id2 = [2u8; 8];
+        let name = [0u8; 32];
         let (pda1, _) = get_drop_pda(&sponsor.pubkey(), &id1);
         let (pda2, _) = get_drop_pda(&sponsor.pubkey(), &id2);
 
         assert_ne!(pda1, pda2);
 
         // Init campaign 1
-        let init_ix1 = create_initialize_drop_ix(&sponsor.pubkey(), &pda1, id1, &backend_authority.pubkey(), 0, 0, 10, LAMPORTS_PER_SOL, 1);
+        let init_ix1 = create_initialize_drop_ix(&sponsor.pubkey(), &pda1, id1, name, &backend_authority.pubkey(), 0, 0, 10, LAMPORTS_PER_SOL, 1);
         svm.send_transaction(Transaction::new_signed_with_payer(&[init_ix1], Some(&sponsor.pubkey()), &[&sponsor], svm.latest_blockhash())).unwrap();
 
         // Init campaign 2
-        let init_ix2 = create_initialize_drop_ix(&sponsor.pubkey(), &pda2, id2, &backend_authority.pubkey(), 1, 1, 20, LAMPORTS_PER_SOL, 1);
+        let init_ix2 = create_initialize_drop_ix(&sponsor.pubkey(), &pda2, id2, name, &backend_authority.pubkey(), 1, 1, 20, LAMPORTS_PER_SOL, 1);
         svm.send_transaction(Transaction::new_signed_with_payer(&[init_ix2], Some(&sponsor.pubkey()), &[&sponsor], svm.latest_blockhash())).unwrap();
 
         assert!(svm.get_account(&pda1).is_some());

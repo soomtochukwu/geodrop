@@ -18,7 +18,6 @@ import { CampaignCard } from "./components/campaign/campaign-card";
 import {
   decodeDrop,
   VAULT_PROGRAM_ADDRESS,
-  DROP_DISCRIMINATOR,
 } from "./generated/vault";
 import { type Drop } from "./generated/vault/accounts";
 import {
@@ -31,6 +30,7 @@ import {
   CheckCircle2,
   Copy,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   const { wallet, status } = useWallet();
@@ -76,6 +76,7 @@ export default function Home() {
 
       setIsLoadingDrops(true);
       try {
+        console.log("[GeoDrop] Fetching campaigns for sponsor:", address);
         // Fetch all program accounts filtered by sponsor address at offset 8
         const programAccounts = await client.rpc
           .getProgramAccounts(VAULT_PROGRAM_ADDRESS, {
@@ -92,16 +93,23 @@ export default function Home() {
           })
           .send();
 
+        console.log("[GeoDrop] Found program accounts:", programAccounts.length);
+
         const decodedDrops: Account<Drop>[] = programAccounts.map((acc) => {
-          return decodeDrop({
-            address: acc.pubkey,
-            data: acc.account.data,
-          } as any);
-        });
+          try {
+            return decodeDrop({
+              address: acc.pubkey,
+              data: acc.account.data,
+            } as any);
+          } catch (err) {
+            console.warn("[GeoDrop] Failed to decode account:", acc.pubkey, err);
+            return null;
+          }
+        }).filter(Boolean) as Account<Drop>[];
 
         setMyDrops(decodedDrops);
       } catch (e) {
-        console.error("Failed to fetch campaigns", e);
+        console.error("[GeoDrop] Failed to fetch campaigns", e);
         setMyDrops([]);
       } finally {
         setIsLoadingDrops(false);
@@ -193,13 +201,13 @@ export default function Home() {
                   </span>
                 </h1>
                 <div className="flex flex-wrap gap-3">
-                  <a
+                  <Link
                     href="/campaign/create"
                     className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-indigo-500 px-8 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                   >
                     <Plus className="h-4 w-4" />
                     CREATE_NEW_DROP
-                  </a>
+                  </Link>
                   <button
                     onClick={() => setShowDemo(true)}
                     className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-sm font-medium text-foreground transition-all hover:bg-white/10"
@@ -266,12 +274,12 @@ export default function Home() {
                       No active drops found. Initialize your first
                       location-based bounty to begin real-world engagement.
                     </p>
-                    <a
+                    <Link
                       href="/campaign/create"
                       className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
                     >
                       [+] DEPLOY_FIRST_DROP
-                    </a>
+                    </Link>
                   </div>
                 )}
               </section>
@@ -367,7 +375,7 @@ export default function Home() {
           rel="noopener noreferrer"
           className="group flex flex-col items-end gap-2"
         >
-          <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl text-center">
+          <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl text-center text-xs">
             Download_Hunter_v1.0.apk
           </span>
           <div

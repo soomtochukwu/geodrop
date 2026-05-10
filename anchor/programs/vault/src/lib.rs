@@ -58,6 +58,7 @@ pub mod vault {
     pub fn initialize_drop(
         ctx: Context<InitializeDrop>,
         campaign_id: [u8; 8],
+        campaign_name: [u8; 32],
         backend_authority: [u8; 32],
         lat: i64,
         long: i64,
@@ -68,6 +69,7 @@ pub mod vault {
         let drop = &mut ctx.accounts.drop;
         drop.sponsor = ctx.accounts.sponsor.key();
         drop.campaign_id = campaign_id;
+        drop.name = campaign_name;
         drop.backend_authority = Pubkey::from(backend_authority);
         drop.latitude = lat;
         drop.longitude = long;
@@ -129,9 +131,6 @@ pub mod vault {
             
             **hunter_info.lamports.borrow_mut() = dest_lamports.checked_add(source_lamports).unwrap();
             **drop_info.lamports.borrow_mut() = 0;
-            
-            // Note: The account will be closed by the Anchor runtime if its lamports reach 0 
-            // and it is no longer rent-exempt.
         } else {
             // Manual partial transfer from program-owned account
             **drop_info.lamports.borrow_mut() -= reward_amount;
@@ -163,7 +162,7 @@ pub struct InitializeDrop<'info> {
     #[account(
         init_if_needed,
         payer = sponsor,
-        space = 8 + 32 + 8 + 32 + 8 + 8 + 8 + 8 + 8 + 8, // disc + sponsor + campaign_id + backend_auth + lat + long + rad + reward + max + current
+        space = 8 + 32 + 8 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8, // disc + sponsor + campaign_id + name + backend_auth + lat + long + rad + reward + max + current
         seeds = [b"drop", sponsor.key().as_ref(), campaign_id.as_ref()],
         bump
     )]
@@ -191,6 +190,7 @@ pub struct ClaimDrop<'info> {
 pub struct Drop {
     pub sponsor: Pubkey,
     pub campaign_id: [u8; 8],
+    pub name: [u8; 32],
     pub backend_authority: Pubkey,
     pub latitude: i64,
     pub longitude: i64,

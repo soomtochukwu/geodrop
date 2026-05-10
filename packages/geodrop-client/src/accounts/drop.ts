@@ -51,6 +51,7 @@ export type Drop = {
   discriminator: ReadonlyUint8Array;
   sponsor: Address;
   campaignId: ReadonlyUint8Array;
+  name: ReadonlyUint8Array;
   backendAuthority: Address;
   latitude: bigint;
   longitude: bigint;
@@ -63,6 +64,7 @@ export type Drop = {
 export type DropArgs = {
   sponsor: Address;
   campaignId: ReadonlyUint8Array;
+  name: ReadonlyUint8Array;
   backendAuthority: Address;
   latitude: number | bigint;
   longitude: number | bigint;
@@ -79,6 +81,7 @@ export function getDropEncoder(): FixedSizeEncoder<DropArgs> {
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
       ["sponsor", getAddressEncoder()],
       ["campaignId", fixEncoderSize(getBytesEncoder(), 8)],
+      ["name", fixEncoderSize(getBytesEncoder(), 32)],
       ["backendAuthority", getAddressEncoder()],
       ["latitude", getI64Encoder()],
       ["longitude", getI64Encoder()],
@@ -97,6 +100,7 @@ export function getDropDecoder(): FixedSizeDecoder<Drop> {
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
     ["sponsor", getAddressDecoder()],
     ["campaignId", fixDecoderSize(getBytesDecoder(), 8)],
+    ["name", fixDecoderSize(getBytesDecoder(), 32)],
     ["backendAuthority", getAddressDecoder()],
     ["latitude", getI64Decoder()],
     ["longitude", getI64Decoder()],
@@ -166,5 +170,5 @@ export async function fetchAllMaybeDrop(
 }
 
 export function getDropSize(): number {
-  return 128;
+  return 160;
 }

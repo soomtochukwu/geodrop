@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Sliders, Users, Award } from "lucide-react";
+import { Sliders, Users, Award, Tag } from "lucide-react";
 
 const MapPicker = dynamic(() => import("./map-picker"), {
   ssr: false,
@@ -18,11 +18,13 @@ const MapPicker = dynamic(() => import("./map-picker"), {
 });
 
 interface StepParametersProps {
+  name: string;
   lat: number;
   lng: number;
   radius: number;
   rewardPerWinner: string;
   maxWinners: string;
+  onNameChange: (name: string) => void;
   onLocationChange: (lat: number, lng: number) => void;
   onRadiusChange: (radius: number) => void;
   onRewardChange: (reward: string) => void;
@@ -32,11 +34,13 @@ interface StepParametersProps {
 }
 
 export function StepParameters({
+  name,
   lat,
   lng,
   radius,
   rewardPerWinner,
   maxWinners,
+  onNameChange,
   onLocationChange,
   onRadiusChange,
   onRewardChange,
@@ -44,7 +48,9 @@ export function StepParameters({
   onNext,
   onBack,
 }: StepParametersProps) {
-  const totalPool = (parseFloat(rewardPerWinner || "0") * parseInt(maxWinners || "0")).toFixed(2);
+  const totalPool = (
+    parseFloat(rewardPerWinner || "0") * parseInt(maxWinners || "0")
+  ).toFixed(2);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -68,6 +74,29 @@ export function StepParameters({
         </div>
 
         <div className="space-y-4">
+          {/* Campaign Name */}
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3 transition-all hover:border-indigo-500/20 shadow-xl">
+            <div className="flex items-center gap-2 text-indigo-400">
+              <Tag className="h-3 w-3" />
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                Campaign_Name
+              </h3>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                maxLength={32}
+                value={name}
+                onChange={(e) => onNameChange(e.target.value)}
+                className="w-full bg-transparent border-b border-white/10 py-1 font-mono text-lg font-bold focus:border-indigo-500 outline-none transition-colors"
+                placeholder="City Center Hunt"
+              />
+              <p className="text-[8px] text-muted-foreground uppercase font-mono tracking-tighter mt-1">
+                Max 32 characters
+              </p>
+            </div>
+          </div>
+
           {/* Max Winners */}
           <div className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3 transition-all hover:border-indigo-500/20">
             <div className="flex items-center gap-2 text-indigo-400">
@@ -94,7 +123,7 @@ export function StepParameters({
 
           {/* Reward per Winner */}
           <div className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3 transition-all hover:border-indigo-500/20">
-             <div className="flex items-center gap-2 text-indigo-400">
+            <div className="flex items-center gap-2 text-indigo-400">
               <Award className="h-3 w-3" />
               <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
                 Reward_Per_Winner
@@ -118,10 +147,12 @@ export function StepParameters({
 
           {/* Total Summary */}
           <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-5 space-y-1">
-             <p className="font-mono text-[9px] text-indigo-400 uppercase tracking-widest font-bold">Total_Campaign_Pool</p>
-             <h4 className="text-2xl font-black font-mono text-white">
-                {totalPool} <span className="text-xs text-indigo-500">SOL</span>
-             </h4>
+            <p className="font-mono text-[9px] text-indigo-400 uppercase tracking-widest font-bold">
+              Total_Campaign_Pool
+            </p>
+            <h4 className="text-2xl font-black font-mono text-white">
+              {totalPool} <span className="text-xs text-indigo-500">SOL</span>
+            </h4>
           </div>
 
           {/* Radius Slider */}
@@ -162,8 +193,9 @@ export function StepParameters({
           &lt; Back_to_type
         </button>
         <button
+          disabled={!name.trim()}
           onClick={onNext}
-          className="group flex items-center gap-2 rounded-full bg-indigo-500 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+          className="group flex items-center gap-2 rounded-full bg-indigo-500 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           NEXT_STEP
           <span className="font-mono opacity-50 group-hover:translate-x-1 transition-transform">
