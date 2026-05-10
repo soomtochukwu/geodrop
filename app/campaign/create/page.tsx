@@ -12,7 +12,10 @@ import { useSolanaClient } from "../../lib/solana-client-context";
 import { lamportsToSolString } from "../../lib/lamports";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
-import { findDropPda } from "../../generated/vault/pdas";
+import {
+  findDropPda,
+  getInitializeDropInstruction,
+} from "@geodrop/client";
 import {
   type Address,
   getAddressEncoder,
@@ -21,7 +24,6 @@ import {
 } from "@solana/kit";
 import { CheckCircle2, ArrowRight, Rocket } from "lucide-react";
 import { toast } from "sonner";
-import { getInitializeDropInstruction } from "../../generated/vault/instructions";
 import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
 import { useCluster } from "../../components/cluster-context";
 
