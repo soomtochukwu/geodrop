@@ -21,8 +21,10 @@ interface StepParametersProps {
   lat: number;
   lng: number;
   radius: number;
+  amount: string;
   onLocationChange: (lat: number, lng: number) => void;
   onRadiusChange: (radius: number) => void;
+  onAmountChange: (amount: string) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -31,8 +33,10 @@ export function StepParameters({
   lat,
   lng,
   radius,
+  amount,
   onLocationChange,
   onRadiusChange,
+  onAmountChange,
   onNext,
   onBack,
 }: StepParametersProps) {
@@ -44,7 +48,7 @@ export function StepParameters({
         </h1>
         <p className="text-sm text-muted-foreground">
           Pin the precise location where hunters can claim your bounty and
-          define the physical reach.
+          define the reward pool.
         </p>
       </div>
 
@@ -59,8 +63,34 @@ export function StepParameters({
         </div>
 
         <div className="space-y-6">
+          {/* Bounty Amount */}
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 space-y-4 transition-all hover:border-indigo-500/20">
+            <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400">
+              Reward_Pool
+            </h3>
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => onAmountChange(e.target.value)}
+                  className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-2xl font-bold focus:border-indigo-500 outline-none transition-colors pr-12"
+                  placeholder="0.00"
+                />
+                <span className="absolute right-0 bottom-2 text-sm font-bold text-muted-foreground">
+                  SOL
+                </span>
+              </div>
+              <p className="text-[8px] text-muted-foreground uppercase font-mono tracking-tighter">
+                Total amount to be distributed to hunters
+              </p>
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-white/5 bg-white/5 p-6 space-y-4">
-            <div className="flex items-center gap-2 text-indigo-400">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Sliders className="h-4 w-4" />
               <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
                 Capture_Radius
@@ -86,10 +116,6 @@ export function StepParameters({
                 onChange={(e) => onRadiusChange(parseInt(e.target.value))}
                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
               />
-              <div className="flex justify-between text-[8px] font-mono text-muted-foreground opacity-50">
-                <span>10M</span>
-                <span>1KM</span>
-              </div>
             </div>
           </div>
 

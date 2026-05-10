@@ -12,7 +12,7 @@ import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
 import { findDropPda } from "../../generated/vault/pdas";
 import { type Address, lamports as sol } from "@solana/kit";
-import { CheckCircle2, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { getInitializeDropInstruction } from "../../generated/vault/instructions";
 import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
@@ -24,6 +24,7 @@ export default function CreateCampaignPage() {
   const { send, isSending } = useSendTransaction();
 
   const [step, setStep] = useState(1);
+  const [fundingPath, setFundingPath] = useState<"lifi" | "sol">("sol");
   const [campaignData, setCampaignData] = useState({
     type: "SOL" as "SOL" | "SPL",
     lat: 37.7749,
@@ -72,7 +73,9 @@ export default function CreateCampaignPage() {
         lat: BigInt(Math.round(campaignData.lat * 1_000_000)),
         long: BigInt(Math.round(campaignData.lng * 1_000_000)),
         radius: BigInt(campaignData.radius),
-        amount: sol(BigInt(Math.round(parseFloat(campaignData.amount) * 1_000_000_000))),
+        amount: sol(
+          BigInt(Math.round(parseFloat(campaignData.amount) * 1_000_000_000))
+        ),
       });
 
       console.log("[GeoDrop] Instruction created. Sending transaction...");
@@ -91,9 +94,10 @@ export default function CreateCampaignPage() {
       setStep(4);
     } catch (e: any) {
       console.error("[GeoDrop] Launch error:", e);
-      
-      let errorMsg = "Launch failed. Ensure you have enough SOL to fund the escrow.";
-      
+
+      let errorMsg =
+        "Launch failed. Ensure you have enough SOL to fund the escrow.";
+
       if (e?.message?.includes("User rejected")) {
         errorMsg = "Transaction rejected by user.";
       } else if (e?.message?.includes("0x1")) {
@@ -115,10 +119,12 @@ export default function CreateCampaignPage() {
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-            <Link href="/" className="font-mono text-xs font-bold uppercase tracking-widest">
+            <Link
+              href="/"
+              className="font-mono text-xs font-bold uppercase tracking-widest"
+            >
               GeoDrop // Sponsor_Node
             </Link>
-
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -133,25 +139,27 @@ export default function CreateCampaignPage() {
             {[
               { id: 1, label: "CAMPAIGN_TYPE" },
               { id: 2, label: "PARAMETERS" },
-              { id: 3, label: "CROSS_CHAIN_FUNDING" },
+              { id: 3, label: "FUNDING" },
               { id: 4, label: "LAUNCH" },
             ].map((s) => (
               <div key={s.id} className="flex flex-col gap-2">
                 <span
-                  className={`font-mono text-[10px] tracking-tighter ${step === s.id
-                    ? "text-indigo-400"
-                    : step > s.id
-                      ? "text-emerald-400"
-                      : "text-muted-foreground/40"
-                    }`}
+                  className={`font-mono text-[10px] tracking-tighter ${
+                    step === s.id
+                      ? "text-indigo-400"
+                      : step > s.id
+                        ? "text-emerald-400"
+                        : "text-muted-foreground/40"
+                  }`}
                 >
                   STEP_0{s.id}
                 </span>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-widest ${step === s.id
-                    ? "text-foreground"
-                    : "text-muted-foreground/30"
-                    }`}
+                  className={`text-[10px] font-bold uppercase tracking-widest ${
+                    step === s.id
+                      ? "text-foreground"
+                      : "text-muted-foreground/30"
+                  }`}
                 >
                   {s.label}
                 </span>
@@ -176,11 +184,15 @@ export default function CreateCampaignPage() {
                 lat={campaignData.lat}
                 lng={campaignData.lng}
                 radius={campaignData.radius}
+                amount={campaignData.amount}
                 onLocationChange={(lat, lng) =>
                   setCampaignData({ ...campaignData, lat, lng })
                 }
                 onRadiusChange={(radius) =>
                   setCampaignData({ ...campaignData, radius })
+                }
+                onAmountChange={(amount) =>
+                  setCampaignData({ ...campaignData, amount })
                 }
                 onBack={() => setStep(1)}
                 onNext={() => setStep(3)}
@@ -190,14 +202,62 @@ export default function CreateCampaignPage() {
             {step === 3 && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
                 <div className="flex flex-col gap-2">
-                  <h1 className="font-mono text-3xl font-black uppercase tracking-tighter">
-                    Fund Escrow{" "}
+                  <h1 className="font-mono text-3xl font-black uppercase tracking-tighter text-white">
+                    Fund Your Bounty{" "}
                     <span className="text-muted-foreground/20">_</span>
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Your bounty configuration is locked. Please fund the Solana
-                    Escrow PDA using your assets from any EVM-compatible chain.
+                    Choose how you want to fund the {campaignData.amount} SOL
+                    reward pool.
                   </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setFundingPath("sol")}
+                    className={`flex flex-col items-start gap-3 rounded-2xl border p-6 text-left transition-all ${
+                      fundingPath === "sol"
+                        ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.1)]"
+                        : "border-white/5 bg-white/5 hover:border-white/10"
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${fundingPath === "sol" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                        Direct_Solana
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Pay instantly with SOL in your connected wallet.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setFundingPath("lifi")}
+                    className={`flex flex-col items-start gap-3 rounded-2xl border p-6 text-left transition-all ${
+                      fundingPath === "lifi"
+                        ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.1)]"
+                        : "border-white/5 bg-white/5 hover:border-white/10"
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${fundingPath === "lifi" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}
+                    >
+                      <Rocket className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                        Cross_Chain
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Bridge funds from Ethereum, Base, or Arbitrum via LI.FI.
+                      </p>
+                    </div>
+                  </button>
                 </div>
 
                 {status !== "connected" ? (
@@ -207,41 +267,63 @@ export default function CreateCampaignPage() {
                     </p>
                     <WalletButton />
                   </div>
+                ) : fundingPath === "sol" ? (
+                  <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-8 flex flex-col items-center gap-6 text-center animate-in zoom-in-95 duration-300">
+                    <div className="space-y-2">
+                      <p className="font-mono text-[10px] text-indigo-400 uppercase tracking-widest font-bold">
+                        Ready_to_deploy
+                      </p>
+                      <h2 className="text-3xl font-black font-mono">
+                        {campaignData.amount}{" "}
+                        <span className="text-indigo-500">SOL</span>
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        The full amount will be transferred from your wallet to
+                        the Campaign Escrow PDA.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleLaunch}
+                      disabled={isSending}
+                      className="group flex w-full max-w-xs items-center justify-center gap-3 rounded-full bg-indigo-500 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-600 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50"
+                    >
+                      {isSending ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          CONFIRMING...
+                        </>
+                      ) : (
+                        <>
+                          DEPLOY_&_INITIALIZE
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="rounded-2xl border border-white/5 bg-card/50 p-1 backdrop-blur-xl">
+                  <div className="animate-in fade-in duration-300">
+                    <div className="rounded-2xl border border-white/5 bg-card/50 p-1 backdrop-blur-xl mb-6">
                       <LiFiFundingWidget
                         destinationAddress={dropAddress ?? ""}
                         amount={campaignData.amount}
                       />
                     </div>
 
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-2 px-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                          OR_INITIALIZE_DIRECTLY_FROM_SOLANA_WALLET
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={handleLaunch}
-                        disabled={isSending}
-                        className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 py-4 text-sm font-bold text-indigo-400 transition-all hover:bg-indigo-500 hover:text-white disabled:opacity-50"
-                      >
-                        {isSending ? (
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            DEPLOYING_TO_SOLANA...
-                          </div>
-                        ) : (
-                          <>
-                            INITIALIZE_&_SKIP_FUNDING
-                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                          </>
-                        )}
-                      </button>
+                    <div className="flex items-center gap-2 px-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                        Once_bridged_click_launch_below
+                      </p>
                     </div>
+
+                    <button
+                      onClick={handleLaunch}
+                      disabled={isSending}
+                      className="mt-4 group flex w-full items-center justify-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 py-4 text-sm font-bold text-emerald-400 transition-all hover:bg-emerald-500 hover:text-white disabled:opacity-50"
+                    >
+                      {isSending ? "LAUNCHING..." : "INITIALIZE_ON_SOLANA"}
+                    </button>
                   </div>
                 )}
 
