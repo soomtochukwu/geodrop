@@ -29,9 +29,34 @@ export default function Home() {
   const balance = useBalance(address);
   const [copied, setCopied] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+  const [shouldPulse, setShouldPulse] = useState(false);
 
   const [myDrops, setMyDrops] = useState<Account<Drop>[]>([]);
   const [isLoadingDrops, setIsLoadingDrops] = useState(false);
+
+  // Randomly trigger attention pulse for CTA
+  useEffect(() => {
+    // Initial pulse on load
+    const initialTimer = setTimeout(() => setShouldPulse(true), 2000);
+
+    const triggerPulse = () => {
+      setShouldPulse(true);
+      // Reset pulse after animation completes (1.5s)
+      setTimeout(() => setShouldPulse(false), 1500);
+
+      // Schedule next pulse at random interval (8-20 seconds)
+      const nextInterval =
+        Math.floor(Math.random() * (20000 - 8000 + 1)) + 8000;
+      return setTimeout(triggerPulse, nextInterval);
+    };
+
+    const pulseTimeout = setTimeout(triggerPulse, 10000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(pulseTimeout);
+    };
+  }, []);
 
   // Fetch campaign for the connected sponsor
   useEffect(() => {
@@ -346,7 +371,9 @@ export default function Home() {
           <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl">
             Download_Hunter_v1.0.apk
           </span>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-500/20 text-white shadow-[0_0_30px_rgba(99,102,241,0.2)] backdrop-blur-xl transition-all hover:scale-110 hover:border-indigo-500 hover:bg-indigo-500 active:scale-95 group-hover:shadow-[0_0_40px_rgba(99,102,241,0.4)]">
+          <div
+            className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-500/30 bg-indigo-500/20 text-white shadow-[0_0_30px_rgba(99,102,241,0.2)] backdrop-blur-xl transition-all hover:scale-110 hover:border-indigo-500 hover:bg-indigo-500 active:scale-95 group-hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] ${shouldPulse ? "animate-cta-attention" : ""}`}
+          >
             <Smartphone className="h-6 w-6" />
           </div>
         </a>
