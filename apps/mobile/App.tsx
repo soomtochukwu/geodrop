@@ -103,7 +103,7 @@ function HunterApp() {
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>GEODROP // LIVE_RADAR</Text>
-        <div style={styles.statusDot} />
+        <View style={styles.statusDot} />
       </View>
 
       <View style={styles.mapContainer}>
@@ -147,9 +147,7 @@ function HunterApp() {
                   <Marker
                     coordinate={{ latitude: dropLat, longitude: dropLng }}
                     title={dropName || "Unnamed Bounty"}
-                    description={`Reward: ${lamportsToSolString(
-                      lamports(drop.data.rewardPerClaim)
-                    )} SOL | ${Number(drop.data.maxClaims) - Number(drop.data.currentClaims)} slots left`}
+                    description={`Reward: ${formatLamportsToSol(drop.data.rewardPerClaim)} SOL | ${Number(drop.data.maxClaims) - Number(drop.data.currentClaims)} slots left`}
                     pinColor={isNearest ? "#6366f1" : "#a1a1aa"}
                   />
                   <Circle
