@@ -8,7 +8,7 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
-import MapView, { Marker, Circle } from "react-native-maps";
+import MapView, { Marker, Circle } from "./components/Map";
 import { MobileWalletProvider } from "@wallet-ui/react-native-kit";
 import { useLocation } from "./hooks/useLocation";
 import { useClaimBounty } from "./hooks/useClaimBounty";
