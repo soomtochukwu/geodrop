@@ -1,4 +1,4 @@
-# GeoDrop: Cross-Chain Physical Bounties
+# [GeoDrop](https://original-geodrop.vercel.app/): Cross-Chain Physical Bounties
 
 **"GeoDrop: Gamifying real-world onboarding to the Solana ecosystem. It's Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses."**
 

@@ -47,9 +47,7 @@ next-env.d.ts
 # solana local validator
 test-ledger/
 
-/video/node_modules
-/video/out
-/video/.remotion
+/video
 /public
 ctd.md
 .agents/
