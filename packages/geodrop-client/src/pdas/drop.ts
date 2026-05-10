@@ -23,7 +23,7 @@ export type DropSeeds = {
 
 export async function findDropPda(
   seeds: DropSeeds,
-  config: { programAddress?: Address | undefined } = {},
+  config: { programAddress?: Address | undefined } = {}
 ): Promise<ProgramDerivedAddress> {
   const {
     programAddress = "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko" as Address<"4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko">,

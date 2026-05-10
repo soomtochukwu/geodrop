@@ -72,8 +72,7 @@ export default function CreateCampaignPage() {
   }, [wallet?.account.address, campaignId]);
 
   const totalPoolAmount = (
-    parseFloat(campaignData.rewardPerWinner) *
-    parseInt(campaignData.maxWinners)
+    parseFloat(campaignData.rewardPerWinner) * parseInt(campaignData.maxWinners)
   ).toFixed(2);
 
   const handleLaunch = async () => {
@@ -192,7 +191,9 @@ export default function CreateCampaignPage() {
                 >
                   {s.label}
                 </span>
-                {step === s.id && <div className="h-0.5 w-full bg-indigo-500" />}
+                {step === s.id && (
+                  <div className="h-0.5 w-full bg-indigo-500" />
+                )}
               </div>
             ))}
           </div>

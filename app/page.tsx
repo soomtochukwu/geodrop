@@ -15,10 +15,7 @@ import { ClusterSelect } from "./components/cluster-select";
 import { WalletButton } from "./components/wallet-button";
 import { useCluster } from "./components/cluster-context";
 import { CampaignCard } from "./components/campaign/campaign-card";
-import {
-  decodeDrop,
-  VAULT_PROGRAM_ADDRESS,
-} from "./generated/vault";
+import { decodeDrop, VAULT_PROGRAM_ADDRESS } from "./generated/vault";
 import { type Drop } from "./generated/vault/accounts";
 import {
   Plus,
@@ -93,19 +90,28 @@ export default function Home() {
           })
           .send();
 
-        console.log("[GeoDrop] Found program accounts:", programAccounts.length);
+        console.log(
+          "[GeoDrop] Found program accounts:",
+          programAccounts.length
+        );
 
-        const decodedDrops: Account<Drop>[] = programAccounts.map((acc) => {
-          try {
-            return decodeDrop({
-              address: acc.pubkey,
-              data: acc.account.data,
-            } as any);
-          } catch (err) {
-            console.warn("[GeoDrop] Failed to decode account:", acc.pubkey, err);
-            return null;
-          }
-        }).filter(Boolean) as Account<Drop>[];
+        const decodedDrops: Account<Drop>[] = programAccounts
+          .map((acc) => {
+            try {
+              return decodeDrop({
+                address: acc.pubkey,
+                data: acc.account.data,
+              } as any);
+            } catch (err) {
+              console.warn(
+                "[GeoDrop] Failed to decode account:",
+                acc.pubkey,
+                err
+              );
+              return null;
+            }
+          })
+          .filter(Boolean) as Account<Drop>[];
 
         setMyDrops(decodedDrops);
       } catch (e) {
