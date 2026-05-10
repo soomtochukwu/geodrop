@@ -38,6 +38,7 @@ import { findDropPda } from "../pdas";
 import { VAULT_PROGRAM_ADDRESS } from "../programs";
 import {
   expectAddress,
+  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from "../shared";
@@ -79,30 +80,36 @@ export type InitializeDropInstruction<
 
 export type InitializeDropInstructionData = {
   discriminator: ReadonlyUint8Array;
+  campaignId: ReadonlyUint8Array;
   backendAuthority: ReadonlyUint8Array;
   lat: bigint;
   long: bigint;
   radius: bigint;
-  amount: bigint;
+  rewardPerClaim: bigint;
+  maxClaims: bigint;
 };
 
 export type InitializeDropInstructionDataArgs = {
+  campaignId: ReadonlyUint8Array;
   backendAuthority: ReadonlyUint8Array;
   lat: number | bigint;
   long: number | bigint;
   radius: number | bigint;
-  amount: number | bigint;
+  rewardPerClaim: number | bigint;
+  maxClaims: number | bigint;
 };
 
 export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<InitializeDropInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
+      ["campaignId", fixEncoderSize(getBytesEncoder(), 8)],
       ["backendAuthority", fixEncoderSize(getBytesEncoder(), 32)],
       ["lat", getI64Encoder()],
       ["long", getI64Encoder()],
       ["radius", getU64Encoder()],
-      ["amount", getU64Encoder()],
+      ["rewardPerClaim", getU64Encoder()],
+      ["maxClaims", getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_DROP_DISCRIMINATOR }),
   );
@@ -111,11 +118,13 @@ export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<Init
 export function getInitializeDropInstructionDataDecoder(): FixedSizeDecoder<InitializeDropInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
+    ["campaignId", fixDecoderSize(getBytesDecoder(), 8)],
     ["backendAuthority", fixDecoderSize(getBytesDecoder(), 32)],
     ["lat", getI64Decoder()],
     ["long", getI64Decoder()],
     ["radius", getU64Decoder()],
-    ["amount", getU64Decoder()],
+    ["rewardPerClaim", getU64Decoder()],
+    ["maxClaims", getU64Decoder()],
   ]);
 }
 
@@ -137,11 +146,13 @@ export type InitializeDropAsyncInput<
   sponsor: TransactionSigner<TAccountSponsor>;
   drop?: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
+  campaignId: InitializeDropInstructionDataArgs["campaignId"];
   backendAuthority: InitializeDropInstructionDataArgs["backendAuthority"];
   lat: InitializeDropInstructionDataArgs["lat"];
   long: InitializeDropInstructionDataArgs["long"];
   radius: InitializeDropInstructionDataArgs["radius"];
-  amount: InitializeDropInstructionDataArgs["amount"];
+  rewardPerClaim: InitializeDropInstructionDataArgs["rewardPerClaim"];
+  maxClaims: InitializeDropInstructionDataArgs["maxClaims"];
 };
 
 export async function getInitializeDropInstructionAsync<
@@ -185,6 +196,7 @@ export async function getInitializeDropInstructionAsync<
   if (!accounts.drop.value) {
     accounts.drop.value = await findDropPda({
       sponsor: expectAddress(accounts.sponsor.value),
+      campaignId: expectSome(args.campaignId),
     });
   }
   if (!accounts.systemProgram.value) {
@@ -219,11 +231,13 @@ export type InitializeDropInput<
   sponsor: TransactionSigner<TAccountSponsor>;
   drop: Address<TAccountDrop>;
   systemProgram?: Address<TAccountSystemProgram>;
+  campaignId: InitializeDropInstructionDataArgs["campaignId"];
   backendAuthority: InitializeDropInstructionDataArgs["backendAuthority"];
   lat: InitializeDropInstructionDataArgs["lat"];
   long: InitializeDropInstructionDataArgs["long"];
   radius: InitializeDropInstructionDataArgs["radius"];
-  amount: InitializeDropInstructionDataArgs["amount"];
+  rewardPerClaim: InitializeDropInstructionDataArgs["rewardPerClaim"];
+  maxClaims: InitializeDropInstructionDataArgs["maxClaims"];
 };
 
 export function getInitializeDropInstruction<

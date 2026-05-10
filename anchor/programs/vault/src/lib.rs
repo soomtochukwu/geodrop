@@ -57,24 +57,31 @@ pub mod vault {
 
     pub fn initialize_drop(
         ctx: Context<InitializeDrop>,
+        campaign_id: [u8; 8],
         backend_authority: [u8; 32],
         lat: i64,
         long: i64,
         radius: u64,
-        amount: u64,
+        reward_per_claim: u64,
+        max_claims: u64,
     ) -> Result<()> {
         let drop = &mut ctx.accounts.drop;
         drop.sponsor = ctx.accounts.sponsor.key();
+        drop.campaign_id = campaign_id;
         drop.backend_authority = Pubkey::from(backend_authority);
         drop.latitude = lat;
         drop.longitude = long;
         drop.radius = radius;
-        drop.amount = amount;
+        drop.reward_per_claim = reward_per_claim;
+        drop.max_claims = max_claims;
+        drop.current_claims = 0;
+
+        let total_amount = reward_per_claim * max_claims;
 
         // Handle existing funds bridged via LiFi
         let current_lamports = ctx.accounts.drop.to_account_info().lamports();
-        if current_lamports < amount {
-            let diff = amount - current_lamports;
+        if current_lamports < total_amount {
+            let diff = total_amount - current_lamports;
             transfer(
                 CpiContext::new(
                     ctx.accounts.system_program.to_account_info(),
@@ -91,21 +98,45 @@ pub mod vault {
     }
 
     pub fn claim_drop(ctx: Context<ClaimDrop>, lat: i64, long: i64) -> Result<()> {
-        let drop = &ctx.accounts.drop;
+        let drop_info = ctx.accounts.drop.to_account_info();
+        let hunter_info = ctx.accounts.hunter.to_account_info();
 
-        // Check distance (Manhattan for simplicity in MVP, or squared Euclidean)
-        let d_lat = (drop.latitude - lat).abs();
-        let d_long = (drop.longitude - long).abs();
+        // Scoped check to avoid borrow conflicts
+        let (is_last_claim, reward_amount) = {
+            let drop = &mut ctx.accounts.drop;
 
-        // Use squared Euclidean distance to avoid sqrt
-        // distance^2 = dx^2 + dy^2
-        let dist_sq = (d_lat as u128).pow(2) + (d_long as u128).pow(2);
-        let radius_sq = (drop.radius as u128).pow(2);
+            // Check if bounty is still active
+            require!(drop.current_claims < drop.max_claims, VaultError::CampaignFinished);
 
-        require!(dist_sq <= radius_sq, VaultError::OutOfRange);
+            // Check distance
+            let d_lat = (drop.latitude - lat).abs();
+            let d_long = (drop.longitude - long).abs();
+            
+            let dist_sq = (d_lat as u128).pow(2) + (d_long as u128).pow(2);
+            let radius_sq = (drop.radius as u128).pow(2);
 
-        // Lamports are already in the drop account.
-        // Anchor's `close` will transfer them to the hunter.
+            require!(dist_sq <= radius_sq, VaultError::OutOfRange);
+            
+            drop.current_claims += 1;
+            let last = drop.current_claims >= drop.max_claims;
+            (last, drop.reward_per_claim)
+        };
+
+        if is_last_claim {
+            // Manual closure: transfer all lamports to the hunter
+            let dest_lamports = hunter_info.lamports();
+            let source_lamports = drop_info.lamports();
+            
+            **hunter_info.lamports.borrow_mut() = dest_lamports.checked_add(source_lamports).unwrap();
+            **drop_info.lamports.borrow_mut() = 0;
+            
+            // Note: The account will be closed by the Anchor runtime if its lamports reach 0 
+            // and it is no longer rent-exempt.
+        } else {
+            // Manual partial transfer from program-owned account
+            **drop_info.lamports.borrow_mut() -= reward_amount;
+            **hunter_info.lamports.borrow_mut() += reward_amount;
+        }
 
         Ok(())
     }
@@ -125,14 +156,15 @@ pub struct VaultAction<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(campaign_id: [u8; 8])]
 pub struct InitializeDrop<'info> {
     #[account(mut)]
     pub sponsor: Signer<'info>,
     #[account(
         init_if_needed,
         payer = sponsor,
-        space = 8 + 32 + 32 + 8 + 8 + 8 + 8, // disc + sponsor + backend_authority + i64 + i64 + u64 + u64
-        seeds = [b"drop", sponsor.key().as_ref()],
+        space = 8 + 32 + 8 + 32 + 8 + 8 + 8 + 8 + 8 + 8, // disc + sponsor + campaign_id + backend_auth + lat + long + rad + reward + max + current
+        seeds = [b"drop", sponsor.key().as_ref(), campaign_id.as_ref()],
         bump
     )]
     pub drop: Account<'info, Drop>,
@@ -146,10 +178,10 @@ pub struct ClaimDrop<'info> {
     pub backend_authority: Signer<'info>,
     #[account(
         mut,
-        close = hunter,
-        seeds = [b"drop", drop.sponsor.as_ref()],
+        seeds = [b"drop", drop.sponsor.as_ref(), drop.campaign_id.as_ref()],
         bump,
         has_one = backend_authority @ VaultError::InvalidAuthority,
+        constraint = drop.current_claims < drop.max_claims @ VaultError::CampaignFinished,
     )]
     pub drop: Account<'info, Drop>,
     pub system_program: Program<'info, System>,
@@ -158,11 +190,14 @@ pub struct ClaimDrop<'info> {
 #[account]
 pub struct Drop {
     pub sponsor: Pubkey,
+    pub campaign_id: [u8; 8],
     pub backend_authority: Pubkey,
     pub latitude: i64,
     pub longitude: i64,
     pub radius: u64,
-    pub amount: u64,
+    pub reward_per_claim: u64,
+    pub max_claims: u64,
+    pub current_claims: u64,
 }
 
 #[error_code]
@@ -175,4 +210,6 @@ pub enum VaultError {
     OutOfRange,
     #[msg("Invalid backend authority")]
     InvalidAuthority,
+    #[msg("Campaign has finished")]
+    CampaignFinished,
 }

@@ -6,26 +6,32 @@
 
 GeoDrop is a decentralized, location-based bounty platform that turns the real world into an interactive crypto playground.
 
-- **For Brands & Sponsors:** A frictionless way to run geo-targeted marketing campaigns. Sponsors can drop token bounties (e.g., USDC, SOL, or custom SPL tokens) at specific physical map coordinates, seamlessly funded from Ethereum, Base, or Arbitrum using our LiFi integration.
-- **For Users (Hunters):** An engaging, native Android app where users explore their city to discover active drops. By physically walking to a location, they generate cryptographic proofs of location to claim rewards instantly on Solana using the Mobile Wallet Adapter (MWA).
+- **For Brands & Sponsors:** A frictionless way to run scalable, geo-targeted marketing campaigns. Sponsors can deploy multiple concurrent bounty drops at specific physical coordinates, set a custom number of winners per drop, and fund rewards seamlessly from Ethereum, Base, or Arbitrum using our LiFi integration.
+- **For Users (Hunters):** An engaging, native Android app where users explore their city to discover live rewards. By physically walking to a location, they generate cryptographic proofs of location to claim an instant share of the bounty pool on Solana using the Mobile Wallet Adapter (MWA).
+
+## 📱 Get the App
+
+Experience the hunt on your Android device:
+[**Download Hunter v1.0 (APK)**](https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/87c9e5d0-1acb-4294-9308-4f2572e077da/019e1176-4e26-75fb-9fed-a07f45296657/application-87c9e5d0-1acb-4294-9308-4f2572e077da.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T105530Z&X-Amz-Expires=900&X-Amz-Signature=01d668553b37e1b7a0fa4015185b28dc5d3c51dcc21fa42a2fc47893ade7431f&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)
 
 ## User Flow
 
 ### 1. Web Portal (The Sponsor)
 
 - **Campaign Creation:** A brand representative visits the GeoDrop web portal and selects a physical location on an interactive map.
-- **Funding (Cross-Chain):** The sponsor enters the total bounty amount (e.g., $1000). If their funds are on an EVM chain (like Base or Ethereum), they use the integrated **LiFi widget** to bridge and swap those assets directly into the campaign's Solana Escrow PDA in a single click.
-- **Initialization:** Once funds arrive on Solana, the portal calls the `initialize_drop` instruction on the GeoDrop Anchor program, recording the coordinates, radius, and total bounty.
+- **Bounty Scaling:** The sponsor defines the **number of possible winners** and the **reward per claim** (e.g., 50 winners at 0.1 SOL each).
+- **Funding (Cross-Chain):** The sponsor enters the total reward amount. If their funds are on an EVM chain, they use the integrated **LiFi widget** to bridge and swap assets directly into the unique campaign escrow PDA.
+- **Initialization:** Once funds arrive, the portal initializes the drop on the Solana Anchor program, locking in the territory and rewards.
 
 ### 2. Mobile App (The Hunter)
 
-- **Discovery:** A user opens the GeoDrop app and sees a real-time "Pokémon GO" style map populated with indigo-colored bounty markers in their city.
+- **Discovery:** A user opens the GeoDrop app and sees a real-time "Pokémon GO" style map populated with active bounty markers, including the number of remaining claims.
 - **The Hunt:** The user physically walks toward a bounty marker. The app uses the Haversine formula to calculate and display the live distance to the target.
 - **Verification:** When the user enters the drop radius (e.g., 50 meters), the "Claim" button becomes active.
 - **Security & Anti-Bot:** Upon pressing "Claim", the app sends the device's GPS coordinates to the GeoDrop backend. The backend performs two checks:
   1.  **Sybil Resistance:** It verifies the wallet's humanity using the **Proof of Human (POH) API**.
   2.  **Oracle Signature:** It confirms the coordinates are within the target radius and returns a cryptographic **ed25519 signature**.
-- **On-Chain Claim:** The app triggers the **Mobile Wallet Adapter (MWA)**. The user signs a transaction that includes the backend's proof. The Solana program verifies the signature and instantly transfers the SOL/SPL bounty to the user's wallet.
+- **On-Chain Claim:** The app triggers the **Mobile Wallet Adapter (MWA)**. The user signs a transaction that includes the backend's proof. The Solana program verifies the signature and transfers a portion of the bounty pool directly to the user. The campaign remains active until the maximum number of claims is reached.
 
 ## Technical Architecture
 

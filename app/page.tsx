@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { lamports as sol, type Account, type Address } from "@solana/kit";
+import { lamports as sol, type Account } from "@solana/kit";
 import { toast } from "sonner";
 import { useWallet } from "./lib/wallet/context";
 import { useBalance } from "./lib/hooks/use-balance";
@@ -16,9 +15,22 @@ import { ClusterSelect } from "./components/cluster-select";
 import { WalletButton } from "./components/wallet-button";
 import { useCluster } from "./components/cluster-context";
 import { CampaignCard } from "./components/campaign/campaign-card";
-import { fetchDrop, findDropPda } from "./generated/vault";
+import {
+  decodeDrop,
+  VAULT_PROGRAM_ADDRESS,
+  DROP_DISCRIMINATOR,
+} from "./generated/vault";
 import { type Drop } from "./generated/vault/accounts";
-import { Plus, LayoutGrid, Loader2, Wallet, X, Smartphone } from "lucide-react";
+import {
+  Plus,
+  LayoutGrid,
+  Loader2,
+  Wallet,
+  X,
+  Smartphone,
+  CheckCircle2,
+  Copy,
+} from "lucide-react";
 
 export default function Home() {
   const { wallet, status } = useWallet();
@@ -36,15 +48,11 @@ export default function Home() {
 
   // Randomly trigger attention pulse for CTA
   useEffect(() => {
-    // Initial pulse on load
     const initialTimer = setTimeout(() => setShouldPulse(true), 2000);
 
     const triggerPulse = () => {
       setShouldPulse(true);
-      // Reset pulse after animation completes (1.5s)
       setTimeout(() => setShouldPulse(false), 1500);
-
-      // Schedule next pulse at random interval (8-20 seconds)
       const nextInterval =
         Math.floor(Math.random() * (20000 - 8000 + 1)) + 8000;
       return setTimeout(triggerPulse, nextInterval);
@@ -58,7 +66,7 @@ export default function Home() {
     };
   }, []);
 
-  // Fetch campaign for the connected sponsor
+  // Fetch campaigns for the connected sponsor
   useEffect(() => {
     async function fetchCampaigns() {
       if (!address || status !== "connected") {
@@ -68,12 +76,32 @@ export default function Home() {
 
       setIsLoadingDrops(true);
       try {
-        const [pda] = await findDropPda({ sponsor: address });
-        // We use fetchDrop which asserts the account exists
-        const drop = await fetchDrop(client.rpc, pda);
-        setMyDrops([drop]);
+        // Fetch all program accounts filtered by sponsor address at offset 8
+        const programAccounts = await client.rpc
+          .getProgramAccounts(VAULT_PROGRAM_ADDRESS, {
+            encoding: "base64",
+            filters: [
+              {
+                memcmp: {
+                  offset: 8n,
+                  bytes: address as any,
+                  encoding: "base58",
+                },
+              },
+            ],
+          })
+          .send();
+
+        const decodedDrops: Account<Drop>[] = programAccounts.map((acc) => {
+          return decodeDrop({
+            address: acc.pubkey,
+            data: acc.account.data,
+          } as any);
+        });
+
+        setMyDrops(decodedDrops);
       } catch (e) {
-        console.log("No active campaign found for this sponsor.");
+        console.error("Failed to fetch campaigns", e);
         setMyDrops([]);
       } finally {
         setIsLoadingDrops(false);
@@ -117,17 +145,17 @@ export default function Home() {
           : "Airdrop failed. Try again later.",
         isRateLimited
           ? {
-            description: (
-              <a
-                href="https://faucet.solana.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Open faucet.solana.com
-              </a>
-            ),
-          }
+              description: (
+                <a
+                  href="https://faucet.solana.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  Open faucet.solana.com
+                </a>
+              ),
+            }
           : undefined
       );
     }
@@ -138,16 +166,12 @@ export default function Home() {
       <GridBackground />
 
       <div className="relative z-10">
-        {/* Header */}
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-            <Link
-              href="/"
-              className="font-mono text-xs font-bold uppercase tracking-widest"
-            >
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-white">
               GeoDrop // Sponsor_Dashboard
-            </Link>
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
@@ -157,12 +181,13 @@ export default function Home() {
         </header>
 
         <main className="mx-auto max-w-6xl px-6">
-          {/* Hero */}
           <section className="pt-6 pb-20 md:pt-8 md:pb-24">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-4">
                 <h1 className="font-black tracking-tight text-foreground">
-                  <span className="block text-6xl md:text-7xl">Geo</span>
+                  <span className="block text-6xl md:text-7xl text-white">
+                    Geo
+                  </span>
                   <span className="block text-7xl md:text-8xl text-indigo-500">
                     Drop
                   </span>
@@ -192,11 +217,11 @@ export default function Home() {
                   integrated LI.FI bridge.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest opacity-40">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 text-white">
                     <div className="h-1 w-1 rounded-full bg-emerald-500" />
                     <span>Cross-Chain Capable</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 text-white">
                     <div className="h-1 w-1 rounded-full bg-indigo-500" />
                     <span>Powered by Solana</span>
                   </div>
@@ -207,12 +232,11 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pb-20">
             <div className="lg:col-span-2 space-y-10">
-              {/* Dashboard Section */}
               <section className="space-y-6">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                   <div className="flex items-center gap-2">
                     <LayoutGrid className="h-4 w-4 text-indigo-400" />
-                    <h2 className="font-mono text-sm font-bold uppercase tracking-widest">
+                    <h2 className="font-mono text-sm font-bold uppercase tracking-widest text-white">
                       My_Active_Campaigns
                     </h2>
                   </div>
@@ -254,7 +278,6 @@ export default function Home() {
             </div>
 
             <div className="space-y-10">
-              {/* Wallet Balance Side Section */}
               {status === "connected" && address && (
                 <section className="relative w-full overflow-hidden rounded-2xl border border-white/5 bg-card/50 p-6 backdrop-blur-xl">
                   <div className="relative flex items-center justify-between">
@@ -262,7 +285,7 @@ export default function Home() {
                       <div className="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10">
                         <Wallet className="h-3 w-3 text-indigo-500" />
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest font-mono">
+                      <span className="text-[10px] font-bold uppercase tracking-widest font-mono text-white">
                         Vault_Status
                       </span>
                     </div>
@@ -280,7 +303,7 @@ export default function Home() {
                     <p className="font-mono text-xs text-muted-foreground uppercase">
                       Liquid_SOL
                     </p>
-                    <p className="font-mono text-3xl font-black tabular-nums tracking-tighter">
+                    <p className="font-mono text-3xl font-black tabular-nums tracking-tighter text-white">
                       {balance.lamports != null
                         ? lamportsToSolString(balance.lamports)
                         : "\u2014"}
@@ -297,44 +320,21 @@ export default function Home() {
                     <span className="font-mono text-[10px] text-muted-foreground">
                       {ellipsify(address, 6)}
                     </span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-3 w-3 text-muted-foreground"
-                    >
-                      {copied ? (
-                        <path d="M20 6 9 17l-5-5" />
-                      ) : (
-                        <>
-                          <rect
-                            width="14"
-                            height="14"
-                            x="8"
-                            y="8"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                        </>
-                      )}
-                    </svg>
+                    {copied ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3 w-3 text-muted-foreground" />
+                    )}
                   </button>
                 </section>
               )}
 
-              {/* Template content */}
               <VaultCard />
             </div>
           </div>
         </main>
       </div>
 
-      {/* Video Demo Modal */}
       {showDemo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-4xl p-4 animate-in zoom-in-95 duration-300">
@@ -360,15 +360,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* Mobile App CTA */}
       <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-right-8 duration-700 delay-500">
         <a
-          href="https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/de2229dc-256f-48ba-adcf-9205ddb3a1f2/019e112a-209d-722e-a382-2d6a646036db/application-de2229dc-256f-48ba-adcf-9205ddb3a1f2.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T100615Z&X-Amz-Expires=900&X-Amz-Signature=e10b998cb174b536ac5fcb9a1f5c82d27b8504a226b2d2fd137e936c2a5b03b8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+          href="https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/87c9e5d0-1acb-4294-9308-4f2572e077da/019e1176-4e26-75fb-9fed-a07f45296657/application-87c9e5d0-1acb-4294-9308-4f2572e077da.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T105530Z&X-Amz-Expires=900&X-Amz-Signature=01d668553b37e1b7a0fa4015185b28dc5d3c51dcc21fa42a2fc47893ade7431f&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
           target="_blank"
           rel="noopener noreferrer"
           className="group flex flex-col items-end gap-2"
         >
-          <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl">
+          <span className="rounded-lg bg-black/80 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100 border border-white/10 shadow-xl text-center">
             Download_Hunter_v1.0.apk
           </span>
           <div

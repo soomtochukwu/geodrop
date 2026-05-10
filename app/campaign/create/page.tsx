@@ -13,7 +13,7 @@ import { lamportsToSolString } from "../../lib/lamports";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
 import { findDropPda } from "../../generated/vault/pdas";
-import { type Address, lamports as sol, getAddressEncoder } from "@solana/kit";
+import { type Address, getAddressEncoder, getBytesEncoder } from "@solana/kit";
 import { CheckCircle2, ArrowRight, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { getInitializeDropInstruction } from "../../generated/vault/instructions";
@@ -33,17 +33,29 @@ export default function CreateCampaignPage() {
     lat: 37.7749,
     lng: -122.4194,
     radius: 100,
-    amount: "0.1",
+    rewardPerWinner: "0.1",
+    maxWinners: "10",
   });
 
   const [dropAddress, setDropAddress] = useState<Address | null>(null);
+  const [campaignId, setCampaignId] = useState<Uint8Array>(new Uint8Array(8));
 
-  // Derive PDA when wallet or parameters change
+  // Initialize a random campaign ID on mount
+  useEffect(() => {
+    const randomId = new Uint8Array(8);
+    crypto.getRandomValues(randomId);
+    setCampaignId(randomId);
+  }, []);
+
+  // Derive PDA when wallet, parameters, or campaignId change
   useEffect(() => {
     async function updatePda() {
-      if (wallet?.account.address) {
+      if (wallet?.account.address && campaignId) {
         try {
-          const [pda] = await findDropPda({ sponsor: wallet.account.address });
+          const [pda] = await findDropPda({ 
+            sponsor: wallet.account.address,
+            campaignId: campaignId,
+          });
           setDropAddress(pda);
         } catch (e) {
           console.error("Failed to derive PDA", e);
@@ -51,7 +63,9 @@ export default function CreateCampaignPage() {
       }
     }
     updatePda();
-  }, [wallet?.account.address]);
+  }, [wallet?.account.address, campaignId]);
+
+  const totalPoolAmount = (parseFloat(campaignData.rewardPerWinner) * parseInt(campaignData.maxWinners)).toFixed(2);
 
   const handleLaunch = async () => {
     if (!signer || !dropAddress) {
@@ -60,26 +74,14 @@ export default function CreateCampaignPage() {
     }
 
     try {
-      // 1. Log current balance to verify devnet funds
       const currentBalance = await client.rpc.getBalance(signer.address).send();
-      console.log(
-        "[GeoDrop] Current balance:",
-        currentBalance.value.toString()
-      );
+      
+      const rewardPerWinnerLamports = BigInt(Math.round(parseFloat(campaignData.rewardPerWinner) * 1_000_000_000));
+      const maxWinnersNum = BigInt(campaignData.maxWinners);
+      const totalBountyRequired = rewardPerWinnerLamports * maxWinnersNum;
 
-      const requiredAmount = BigInt(
-        Math.round(parseFloat(campaignData.amount) * 1_000_000_000)
-      );
-      console.log("[GeoDrop] Attempting launch...", {
-        dropAddress,
-        campaignData,
-        requiredAmount: requiredAmount.toString(),
-      });
-
-      if (currentBalance.value < requiredAmount) {
-        toast.error(
-          `Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need at least ${campaignData.amount} SOL.`
-        );
+      if (currentBalance.value < totalBountyRequired) {
+        toast.error(`Insufficient balance. You have ${lamportsToSolString(currentBalance.value)} SOL but need ${totalPoolAmount} SOL.`);
         return;
       }
 
@@ -92,19 +94,19 @@ export default function CreateCampaignPage() {
       const instruction = getInitializeDropInstruction({
         sponsor: signer,
         drop: dropAddress,
+        campaignId: campaignId,
         backendAuthority: backendAuthorityBytes,
         lat: BigInt(Math.round(campaignData.lat * 1_000_000)),
         long: BigInt(Math.round(campaignData.lng * 1_000_000)),
         radius: BigInt(campaignData.radius),
-        amount: requiredAmount,
+        rewardPerClaim: rewardPerWinnerLamports,
+        maxClaims: maxWinnersNum,
       });
-
-      console.log("[GeoDrop] Instruction created. Sending transaction...");
 
       const signature = await send({ instructions: [instruction] });
 
       toast.success("Campaign Launched!", {
-        description: "Your physical bounty is now live on the map.",
+        description: "Your physical bounty pool is now live on the map.",
         action: {
           label: "View TX",
           onClick: () =>
@@ -115,19 +117,7 @@ export default function CreateCampaignPage() {
       setStep(4);
     } catch (e: any) {
       console.error("[GeoDrop] Launch error:", e);
-
-      let errorMsg =
-        "Launch failed. Ensure you have enough SOL to fund the escrow.";
-
-      if (e?.message?.includes("User rejected")) {
-        errorMsg = "Transaction rejected by user.";
-      } else if (e?.message?.includes("0x1")) {
-        errorMsg = "Insufficient funds for campaign + gas.";
-      } else if (e?.message) {
-        errorMsg = `Launch error: ${e.message}`;
-      }
-
-      toast.error(errorMsg);
+      toast.error(e?.message || "Launch failed.");
     }
   };
 
@@ -136,7 +126,6 @@ export default function CreateCampaignPage() {
       <GridBackground />
 
       <div className="relative z-10">
-        {/* Header */}
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
@@ -155,7 +144,6 @@ export default function CreateCampaignPage() {
         </header>
 
         <main className="mx-auto max-w-6xl px-6 py-12">
-          {/* Stepper Header */}
           <div className="mb-12 flex justify-between border-b border-white/5 pb-8 max-w-2xl mx-auto">
             {[
               { id: 1, label: "CAMPAIGN_TYPE" },
@@ -205,15 +193,19 @@ export default function CreateCampaignPage() {
                 lat={campaignData.lat}
                 lng={campaignData.lng}
                 radius={campaignData.radius}
-                amount={campaignData.amount}
+                rewardPerWinner={campaignData.rewardPerWinner}
+                maxWinners={campaignData.maxWinners}
                 onLocationChange={(lat, lng) =>
                   setCampaignData({ ...campaignData, lat, lng })
                 }
                 onRadiusChange={(radius) =>
                   setCampaignData({ ...campaignData, radius })
                 }
-                onAmountChange={(amount) =>
-                  setCampaignData({ ...campaignData, amount })
+                onRewardChange={(rewardPerWinner) =>
+                  setCampaignData({ ...campaignData, rewardPerWinner })
+                }
+                onWinnersChange={(maxWinners) =>
+                  setCampaignData({ ...campaignData, maxWinners })
                 }
                 onBack={() => setStep(1)}
                 onNext={() => setStep(3)}
@@ -224,12 +216,10 @@ export default function CreateCampaignPage() {
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
                 <div className="flex flex-col gap-2">
                   <h1 className="font-mono text-3xl font-black uppercase tracking-tighter text-white">
-                    Fund Your Bounty{" "}
-                    <span className="text-muted-foreground/20">_</span>
+                    Fund Your Bounty <span className="text-muted-foreground/20">_</span>
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Choose how you want to fund the {campaignData.amount} SOL
-                    reward pool.
+                    Choose how you want to fund the {totalPoolAmount} SOL reward pool.
                   </p>
                 </div>
 
@@ -242,13 +232,11 @@ export default function CreateCampaignPage() {
                         : "border-white/5 bg-white/5 hover:border-white/10"
                     }`}
                   >
-                    <div
-                      className={`p-2 rounded-lg ${fundingPath === "sol" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}
-                    >
+                    <div className={`p-2 rounded-lg ${fundingPath === "sol" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}>
                       <CheckCircle2 className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                         Direct_Solana
                       </h3>
                       <p className="text-[10px] text-muted-foreground mt-1">
@@ -265,13 +253,11 @@ export default function CreateCampaignPage() {
                         : "border-white/5 bg-white/5 hover:border-white/10"
                     }`}
                   >
-                    <div
-                      className={`p-2 rounded-lg ${fundingPath === "lifi" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}
-                    >
+                    <div className={`p-2 rounded-lg ${fundingPath === "lifi" ? "bg-indigo-500 text-white" : "bg-white/5 text-muted-foreground"}`}>
                       <Rocket className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                         Cross_Chain
                       </h3>
                       <p className="text-[10px] text-muted-foreground mt-1">
@@ -291,19 +277,15 @@ export default function CreateCampaignPage() {
                 ) : fundingPath === "sol" ? (
                   <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-8 flex flex-col items-center gap-6 text-center animate-in zoom-in-95 duration-300">
                     <div className="space-y-2">
-                      <p className="font-mono text-[10px] text-indigo-400 uppercase tracking-widest font-bold">
-                        Ready_to_deploy
-                      </p>
-                      <h2 className="text-3xl font-black font-mono">
-                        {campaignData.amount}{" "}
-                        <span className="text-indigo-500">SOL</span>
+                      <p className="font-mono text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Ready_to_deploy</p>
+                      <h2 className="text-3xl font-black font-mono text-white">
+                        {totalPoolAmount} <span className="text-indigo-500">SOL</span>
                       </h2>
                       <p className="text-xs text-muted-foreground">
-                        The full amount will be transferred from your wallet to
-                        the Campaign Escrow PDA.
+                        {campaignData.maxWinners} winners will receive {campaignData.rewardPerWinner} SOL each.
                       </p>
                     </div>
-
+                    
                     <button
                       onClick={handleLaunch}
                       disabled={isSending}
@@ -327,17 +309,17 @@ export default function CreateCampaignPage() {
                     <div className="rounded-2xl border border-white/5 bg-card/50 p-1 backdrop-blur-xl mb-6">
                       <LiFiFundingWidget
                         destinationAddress={dropAddress ?? ""}
-                        amount={campaignData.amount}
+                        amount={totalPoolAmount}
                       />
                     </div>
-
+                    
                     <div className="flex items-center gap-2 px-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
                         Once_bridged_click_launch_below
                       </p>
                     </div>
-
+                    
                     <button
                       onClick={handleLaunch}
                       disabled={isSending}
@@ -374,37 +356,28 @@ export default function CreateCampaignPage() {
                     Drop Live!
                   </h1>
                   <p className="text-muted-foreground max-w-sm mx-auto text-sm">
-                    Your location-based bounty is now broadcasted to all hunters
-                    in the area. Real-world adoption has been initialized.
+                    Your location-based bounty pool is now broadcasted to all hunters in the area. 
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 w-full pt-8">
                   <div className="rounded-2xl border border-white/5 bg-white/5 p-4 space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-mono">
-                      Bounty_Pool
-                    </p>
-                    <p className="text-xl font-bold font-mono">
-                      {campaignData.amount} SOL
-                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-mono">Total_Reward_Pool</p>
+                    <p className="text-xl font-bold font-mono text-white">{totalPoolAmount} SOL</p>
                   </div>
                   <div className="rounded-2xl border border-white/5 bg-white/5 p-4 space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-mono">
-                      Target_Radius
-                    </p>
-                    <p className="text-xl font-bold font-mono">
-                      {campaignData.radius}M
-                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-mono">Max_Winners</p>
+                    <p className="text-xl font-bold font-mono text-white">{campaignData.maxWinners}</p>
                   </div>
                 </div>
 
-                <a
+                <Link
                   href="/"
                   className="group flex items-center gap-2 rounded-full bg-white text-black px-8 py-3 text-sm font-bold transition-all hover:scale-105 active:scale-95"
                 >
                   RETURN_TO_DASHBOARD
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </Link>
               </div>
             )}
           </div>

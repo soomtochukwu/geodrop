@@ -45,7 +45,12 @@ export function useDrops() {
           }
         );
 
-        setDrops(decodedDrops);
+        // Filter out finished campaigns
+        const activeDrops = decodedDrops.filter(
+          (d) => Number(d.data.currentClaims) < Number(d.data.maxClaims)
+        );
+
+        setDrops(activeDrops);
       } catch (e) {
         console.error("[GeoDrop] Failed to fetch drops:", e);
       } finally {
@@ -55,7 +60,6 @@ export function useDrops() {
 
     fetchAllDrops();
 
-    // Poll every 30 seconds for new drops
     const interval = setInterval(fetchAllDrops, 30000);
     return () => clearInterval(interval);
   }, []);

@@ -129,9 +129,9 @@ function HunterApp() {
                   <Marker
                     coordinate={{ latitude: dropLat, longitude: dropLng }}
                     title={`Bounty: ${lamportsToSolString(
-                      lamports(drop.data.amount)
+                      lamports(drop.data.rewardPerClaim)
                     )} SOL`}
-                    description={`Radius: ${drop.data.radius}m`}
+                    description={`${Number(drop.data.maxClaims) - Number(drop.data.currentClaims)} winner slots left`}
                     pinColor={isNearest ? "#6366f1" : "#a1a1aa"}
                   />
                   <Circle

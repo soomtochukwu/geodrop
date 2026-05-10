@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Sliders } from "lucide-react";
+import { Sliders, Users, Award } from "lucide-react";
 
 const MapPicker = dynamic(() => import("./map-picker"), {
   ssr: false,
@@ -21,10 +21,12 @@ interface StepParametersProps {
   lat: number;
   lng: number;
   radius: number;
-  amount: string;
+  rewardPerWinner: string;
+  maxWinners: string;
   onLocationChange: (lat: number, lng: number) => void;
   onRadiusChange: (radius: number) => void;
-  onAmountChange: (amount: string) => void;
+  onRewardChange: (reward: string) => void;
+  onWinnersChange: (max: string) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -33,22 +35,25 @@ export function StepParameters({
   lat,
   lng,
   radius,
-  amount,
+  rewardPerWinner,
+  maxWinners,
   onLocationChange,
   onRadiusChange,
-  onAmountChange,
+  onRewardChange,
+  onWinnersChange,
   onNext,
   onBack,
 }: StepParametersProps) {
+  const totalPool = (parseFloat(rewardPerWinner || "0") * parseInt(maxWinners || "0")).toFixed(2);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-2">
-        <h1 className="font-mono text-3xl font-black uppercase tracking-tighter">
-          Define Territory <span className="text-muted-foreground/20">_</span>
+        <h1 className="font-mono text-3xl font-black uppercase tracking-tighter text-white">
+          Configure Bounty <span className="text-muted-foreground/20">_</span>
         </h1>
         <p className="text-sm text-muted-foreground">
-          Pin the precise location where hunters can claim your bounty and
-          define the reward pool.
+          Define your target area and specify the rewards for your hunters.
         </p>
       </div>
 
@@ -62,49 +67,77 @@ export function StepParameters({
           />
         </div>
 
-        <div className="space-y-6">
-          {/* Bounty Amount */}
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 space-y-4 transition-all hover:border-indigo-500/20">
-            <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-indigo-400">
-              Reward_Pool
-            </h3>
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => onAmountChange(e.target.value)}
-                  className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-2xl font-bold focus:border-indigo-500 outline-none transition-colors pr-12"
-                  placeholder="0.00"
-                />
-                <span className="absolute right-0 bottom-2 text-sm font-bold text-muted-foreground">
-                  SOL
-                </span>
-              </div>
-              <p className="text-[8px] text-muted-foreground uppercase font-mono tracking-tighter">
-                Total amount to be distributed to hunters
-              </p>
+        <div className="space-y-4">
+          {/* Max Winners */}
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3 transition-all hover:border-indigo-500/20">
+            <div className="flex items-center gap-2 text-indigo-400">
+              <Users className="h-3 w-3" />
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                Target_Audience
+              </h3>
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={maxWinners}
+                onChange={(e) => onWinnersChange(e.target.value)}
+                className="w-full bg-transparent border-b border-white/10 py-1 font-mono text-xl font-bold focus:border-indigo-500 outline-none transition-colors pr-16"
+                placeholder="1"
+              />
+              <span className="absolute right-0 bottom-1 text-[10px] font-bold text-muted-foreground font-mono uppercase">
+                Winners
+              </span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 space-y-4">
+          {/* Reward per Winner */}
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3 transition-all hover:border-indigo-500/20">
+             <div className="flex items-center gap-2 text-indigo-400">
+              <Award className="h-3 w-3" />
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                Reward_Per_Winner
+              </h3>
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={rewardPerWinner}
+                onChange={(e) => onRewardChange(e.target.value)}
+                className="w-full bg-transparent border-b border-white/10 py-1 font-mono text-xl font-bold focus:border-indigo-500 outline-none transition-colors pr-12"
+                placeholder="0.1"
+              />
+              <span className="absolute right-0 bottom-1 text-[10px] font-bold text-muted-foreground font-mono uppercase">
+                SOL
+              </span>
+            </div>
+          </div>
+
+          {/* Total Summary */}
+          <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-5 space-y-1">
+             <p className="font-mono text-[9px] text-indigo-400 uppercase tracking-widest font-bold">Total_Campaign_Pool</p>
+             <h4 className="text-2xl font-black font-mono text-white">
+                {totalPool} <span className="text-xs text-indigo-500">SOL</span>
+             </h4>
+          </div>
+
+          {/* Radius Slider */}
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-3">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Sliders className="h-4 w-4" />
+              <Sliders className="h-3 w-3" />
               <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest">
                 Capture_Radius
               </h3>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="flex justify-between items-end">
-                <span className="text-3xl font-bold font-mono">
+                <span className="text-xl font-bold font-mono">
                   {radius}
-                  <span className="text-sm text-muted-foreground ml-1">M</span>
-                </span>
-                <span className="text-[10px] text-muted-foreground font-mono opacity-50 uppercase">
-                  meters_sq
+                  <span className="text-xs text-muted-foreground ml-1">M</span>
                 </span>
               </div>
               <input
@@ -116,26 +149,6 @@ export function StepParameters({
                 onChange={(e) => onRadiusChange(parseInt(e.target.value))}
                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
               />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 space-y-4">
-            <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              GPS_COORDINATES
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-[8px] text-muted-foreground uppercase">
-                  Latitude
-                </p>
-                <p className="font-mono text-xs">{lat.toFixed(6)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[8px] text-muted-foreground uppercase">
-                  Longitude
-                </p>
-                <p className="font-mono text-xs">{lng.toFixed(6)}</p>
-              </div>
             </div>
           </div>
         </div>
