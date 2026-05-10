@@ -21,9 +21,7 @@ export function parseTransactionError(err: unknown): string {
   }
 
   // Anchor custom program errors — use the Codama-generated error messages
-  if (
-    isSolanaError(err, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)
-  ) {
+  if (isSolanaError(err, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)) {
     // Note: In some versions of @solana/kit, the address is in err.context
     // We check for the code which is unique to our vault errors
     const code = (err as any).context?.code;

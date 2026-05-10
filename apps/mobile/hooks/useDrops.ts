@@ -23,7 +23,9 @@ export function useDrops() {
 
         // 1. Convert discriminator to base58 for the filter
         // Note: DROP_DISCRIMINATOR is already a Uint8Array, we just need to base58 encode it.
-        const discBase58 = getBase58Encoder().encode(new TextDecoder().decode(DROP_DISCRIMINATOR));
+        const discBase58 = getBase58Encoder().encode(
+          new TextDecoder().decode(DROP_DISCRIMINATOR)
+        );
 
         // 2. Fetch all accounts owned by our program
         const programAccounts = await rpc
@@ -41,31 +43,35 @@ export function useDrops() {
           })
           .send();
 
-        const decodedDrops: Account<Drop>[] = (programAccounts as any[]).map(
-          (acc) => {
+        const decodedDrops: Account<Drop>[] = (programAccounts as any[])
+          .map((acc) => {
             try {
-                // Standardize data decoding for Mobile environment (Expo/Android)
-                const rawData = acc.account.data;
-                let data: ReadonlyUint8Array;
-                
-                if (Array.isArray(rawData)) {
-                  data = base64.encode(rawData[0] as string) as unknown as ReadonlyUint8Array;
-                } else if (typeof rawData === 'string') {
-                  data = base64.encode(rawData) as unknown as ReadonlyUint8Array;
-                } else {
-                  data = rawData as ReadonlyUint8Array;
-                }
+              // Standardize data decoding for Mobile environment (Expo/Android)
+              const rawData = acc.account.data;
+              let data: ReadonlyUint8Array;
 
-                return decodeDrop({
-                  address: acc.pubkey,
-                  data: data,
-                } as any);
+              if (Array.isArray(rawData)) {
+                data = base64.encode(
+                  rawData[0] as string
+                ) as unknown as ReadonlyUint8Array;
+              } else if (typeof rawData === "string") {
+                data = base64.encode(rawData) as unknown as ReadonlyUint8Array;
+              } else {
+                data = rawData as ReadonlyUint8Array;
+              }
+
+              return decodeDrop({
+                address: acc.pubkey,
+                data: data,
+              } as any);
             } catch (err) {
-                console.warn(`[GeoDrop] Mobile: Failed to decode drop ${acc.pubkey}. Likely stale structure.`);
-                return null;
+              console.warn(
+                `[GeoDrop] Mobile: Failed to decode drop ${acc.pubkey}. Likely stale structure.`
+              );
+              return null;
             }
-          }
-        ).filter(Boolean) as Account<Drop>[];
+          })
+          .filter(Boolean) as Account<Drop>[];
 
         // Filter out finished campaigns
         const activeDrops = decodedDrops.filter(

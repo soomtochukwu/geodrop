@@ -12,10 +12,7 @@ import { useSolanaClient } from "../../lib/solana-client-context";
 import { lamportsToSolString } from "../../lib/lamports";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
-import {
-  findDropPda,
-  getInitializeDropInstruction,
-} from "@geodrop/client";
+import { findDropPda, getInitializeDropInstruction } from "@geodrop/client";
 import {
   type Address,
   getAddressEncoder,

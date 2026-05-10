@@ -50,7 +50,9 @@ export function VaultCard() {
       try {
         let instruction;
         if (type === "deposit") {
-          const lamports = BigInt(Math.round(parseFloat(amount) * 1_000_000_000));
+          const lamports = BigInt(
+            Math.round(parseFloat(amount) * 1_000_000_000)
+          );
           instruction = getDepositInstruction({
             signer,
             vault: vaultAddress,
@@ -65,18 +67,21 @@ export function VaultCard() {
 
         const signature = await send({ instructions: [instruction] });
 
-        toast.success(`${type === "deposit" ? "Deposited" : "Withdrawn"} successfully!`, {
-          description: signature ? (
-            <a
-              href={getExplorerUrl(`/tx/${signature}`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              View transaction
-            </a>
-          ) : undefined,
-        });
+        toast.success(
+          `${type === "deposit" ? "Deposited" : "Withdrawn"} successfully!`,
+          {
+            description: signature ? (
+              <a
+                href={getExplorerUrl(`/tx/${signature}`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                View transaction
+              </a>
+            ) : undefined,
+          }
+        );
         setAmount("");
       } catch (err) {
         console.error(`${type} failed:`, err);
@@ -147,7 +152,8 @@ export function VaultCard() {
 
       <div className="mt-6 border-t border-white/5 pt-4">
         <p className="text-center font-mono text-[8px] leading-relaxed text-muted-foreground uppercase tracking-wider">
-          Funds in escrow are used to secure and initialize location-based bounties.
+          Funds in escrow are used to secure and initialize location-based
+          bounties.
         </p>
       </div>
     </section>
