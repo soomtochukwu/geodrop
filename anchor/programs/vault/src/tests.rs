@@ -76,7 +76,7 @@ mod tests {
             accounts: vec![
                 AccountMeta::new(*sponsor, true),
                 AccountMeta::new(*drop_pda, false),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(anchor_lang::solana_program::system_program::ID, false),
             ],
             data,
         }

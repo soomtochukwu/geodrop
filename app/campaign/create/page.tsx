@@ -13,7 +13,7 @@ import { lamportsToSolString } from "../../lib/lamports";
 import { StepType } from "../../components/campaign/step-type";
 import { StepParameters } from "../../components/campaign/step-parameters";
 import { findDropPda } from "../../generated/vault/pdas";
-import { type Address, lamports as sol } from "@solana/kit";
+import { type Address, lamports as sol, getAddressEncoder } from "@solana/kit";
 import { CheckCircle2, ArrowRight, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { getInitializeDropInstruction } from "../../generated/vault/instructions";
@@ -84,17 +84,19 @@ export default function CreateCampaignPage() {
       }
 
       // Backend authority (F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR)
-      const BACKEND_AUTHORITY =
-        "F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR" as Address;
+      const BACKEND_AUTHORITY = "F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR";
+      const backendAuthorityBytes = getAddressEncoder().encode(
+        BACKEND_AUTHORITY as Address
+      );
 
       const instruction = getInitializeDropInstruction({
         sponsor: signer,
         drop: dropAddress,
-        backendAuthority: BACKEND_AUTHORITY,
+        backendAuthority: backendAuthorityBytes,
         lat: BigInt(Math.round(campaignData.lat * 1_000_000)),
         long: BigInt(Math.round(campaignData.lng * 1_000_000)),
         radius: BigInt(campaignData.radius),
-        amount: sol(requiredAmount),
+        amount: requiredAmount,
       });
 
       console.log("[GeoDrop] Instruction created. Sending transaction...");

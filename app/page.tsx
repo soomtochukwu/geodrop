@@ -117,17 +117,17 @@ export default function Home() {
           : "Airdrop failed. Try again later.",
         isRateLimited
           ? {
-              description: (
-                <a
-                  href="https://faucet.solana.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  Open faucet.solana.com
-                </a>
-              ),
-            }
+            description: (
+              <a
+                href="https://faucet.solana.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Open faucet.solana.com
+              </a>
+            ),
+          }
           : undefined
       );
     }
@@ -363,7 +363,7 @@ export default function Home() {
       {/* Mobile App CTA */}
       <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-right-8 duration-700 delay-500">
         <a
-          href="https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/2912e0c7-a52a-49ff-a3b6-604701a3768e/019e10b6-d4cb-776a-b2ae-b363ccc47edd/application-2912e0c7-a52a-49ff-a3b6-604701a3768e.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T081426Z&X-Amz-Expires=900&X-Amz-Signature=580c45350ca10625d0c507b39dbca530895779e6ddcdc95442274d16211f5322&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+          href="https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/de2229dc-256f-48ba-adcf-9205ddb3a1f2/019e112a-209d-722e-a382-2d6a646036db/application-de2229dc-256f-48ba-adcf-9205ddb3a1f2.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T100615Z&X-Amz-Expires=900&X-Amz-Signature=e10b998cb174b536ac5fcb9a1f5c82d27b8504a226b2d2fd137e936c2a5b03b8&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
           target="_blank"
           rel="noopener noreferrer"
           className="group flex flex-col items-end gap-2"

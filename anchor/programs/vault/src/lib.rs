@@ -57,7 +57,7 @@ pub mod vault {
 
     pub fn initialize_drop(
         ctx: Context<InitializeDrop>,
-        backend_authority: Pubkey,
+        backend_authority: [u8; 32],
         lat: i64,
         long: i64,
         radius: u64,
@@ -65,7 +65,7 @@ pub mod vault {
     ) -> Result<()> {
         let drop = &mut ctx.accounts.drop;
         drop.sponsor = ctx.accounts.sponsor.key();
-        drop.backend_authority = backend_authority;
+        drop.backend_authority = Pubkey::from(backend_authority);
         drop.latitude = lat;
         drop.longitude = long;
         drop.radius = radius;

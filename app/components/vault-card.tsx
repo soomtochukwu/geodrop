@@ -241,16 +241,16 @@ export function VaultCard() {
         <p className="mb-2">
           This vault is an{" "}
           <a
-            href="https://www.anchor-lang.com/docs"
+            href="https://solscan.io/account/4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko?cluster=devnet"
             target="_blank"
             rel="noreferrer"
             className="font-medium underline underline-offset-2"
           >
             Anchor program
           </a>{" "}
-          deployed on devnet. Want to deploy your own?
+          deployed on the Solana devnet.
         </p>
-        <div className="flex flex-wrap gap-3">
+        {/* <div className="flex flex-wrap gap-3">
           <a
             href="https://www.anchor-lang.com/docs/quickstart"
             target="_blank"
@@ -267,7 +267,7 @@ export function VaultCard() {
           >
             Deploy Programs
           </a>
-        </div>
+        </div> */}
       </div>
     </section>
   );

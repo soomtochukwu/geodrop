@@ -10,8 +10,6 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressDecoder,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getI64Decoder,
@@ -50,7 +48,7 @@ export const INITIALIZE_DROP_DISCRIMINATOR = new Uint8Array([
 
 export function getInitializeDropDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    INITIALIZE_DROP_DISCRIMINATOR
+    INITIALIZE_DROP_DISCRIMINATOR,
   );
 }
 
@@ -81,7 +79,7 @@ export type InitializeDropInstruction<
 
 export type InitializeDropInstructionData = {
   discriminator: ReadonlyUint8Array;
-  backendAuthority: Address;
+  backendAuthority: ReadonlyUint8Array;
   lat: bigint;
   long: bigint;
   radius: bigint;
@@ -89,7 +87,7 @@ export type InitializeDropInstructionData = {
 };
 
 export type InitializeDropInstructionDataArgs = {
-  backendAuthority: Address;
+  backendAuthority: ReadonlyUint8Array;
   lat: number | bigint;
   long: number | bigint;
   radius: number | bigint;
@@ -100,20 +98,20 @@ export function getInitializeDropInstructionDataEncoder(): FixedSizeEncoder<Init
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["backendAuthority", getAddressEncoder()],
+      ["backendAuthority", fixEncoderSize(getBytesEncoder(), 32)],
       ["lat", getI64Encoder()],
       ["long", getI64Encoder()],
       ["radius", getU64Encoder()],
       ["amount", getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_DROP_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: INITIALIZE_DROP_DISCRIMINATOR }),
   );
 }
 
 export function getInitializeDropInstructionDataDecoder(): FixedSizeDecoder<InitializeDropInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["backendAuthority", getAddressDecoder()],
+    ["backendAuthority", fixDecoderSize(getBytesDecoder(), 32)],
     ["lat", getI64Decoder()],
     ["long", getI64Decoder()],
     ["radius", getU64Decoder()],
@@ -127,7 +125,7 @@ export function getInitializeDropInstructionDataCodec(): FixedSizeCodec<
 > {
   return combineCodec(
     getInitializeDropInstructionDataEncoder(),
-    getInitializeDropInstructionDataDecoder()
+    getInitializeDropInstructionDataDecoder(),
   );
 }
 
@@ -157,7 +155,7 @@ export async function getInitializeDropInstructionAsync<
     TAccountDrop,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): Promise<
   InitializeDropInstruction<
     TProgramAddress,
@@ -202,7 +200,7 @@ export async function getInitializeDropInstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getInitializeDropInstructionDataEncoder().encode(
-      args as InitializeDropInstructionDataArgs
+      args as InitializeDropInstructionDataArgs,
     ),
     programAddress,
   } as InitializeDropInstruction<
@@ -239,7 +237,7 @@ export function getInitializeDropInstruction<
     TAccountDrop,
     TAccountSystemProgram
   >,
-  config?: { programAddress?: TProgramAddress }
+  config?: { programAddress?: TProgramAddress },
 ): InitializeDropInstruction<
   TProgramAddress,
   TAccountSponsor,
@@ -277,7 +275,7 @@ export function getInitializeDropInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     data: getInitializeDropInstructionDataEncoder().encode(
-      args as InitializeDropInstructionDataArgs
+      args as InitializeDropInstructionDataArgs,
     ),
     programAddress,
   } as InitializeDropInstruction<
@@ -307,7 +305,7 @@ export function parseInitializeDropInstruction<
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>
+    InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeDropInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
