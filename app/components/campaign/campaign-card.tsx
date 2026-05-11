@@ -2,7 +2,8 @@
 
 import { MapPin, Target, ExternalLink } from "lucide-react";
 import { type Account, lamports } from "@solana/kit";
-import { type Drop, lamportsToSolString } from "@geodrop/client";
+import { type Drop } from "@geodrop/client";
+import { lamportsToSolString } from "../../lib/lamports";
 import { useCluster } from "../cluster-context";
 
 interface CampaignCardProps {
