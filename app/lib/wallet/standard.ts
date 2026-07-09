@@ -18,6 +18,31 @@ import type {
   WalletConnectorMetadata,
   WalletSession,
 } from "./types";
+import {
+  createDefaultAuthorizationCache,
+  createDefaultChainSelector,
+  createDefaultWalletNotFoundHandler,
+  registerMwa,
+} from "@solana-mobile/wallet-standard-mobile";
+
+// Register Mobile Wallet Adapter as a standard wallet on the client side
+if (typeof window !== "undefined") {
+  try {
+    registerMwa({
+      appIdentity: {
+        name: "GeoDrop Sponsor Portal",
+        uri: window.location.origin,
+        icon: "icon.svg",
+      },
+      authorizationCache: createDefaultAuthorizationCache(),
+      chains: ["solana:devnet", "solana:mainnet"],
+      chainSelector: createDefaultChainSelector(),
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),
+    });
+  } catch (e) {
+    console.warn("[GeoDrop Web] MWA Registration failed/skipped:", e);
+  }
+}
 
 function isSolanaWallet(wallet: StandardWallet): boolean {
   return (

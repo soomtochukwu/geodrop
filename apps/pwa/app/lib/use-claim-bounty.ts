@@ -112,10 +112,7 @@ export function useClaimBounty() {
 
       // 4. Have the user's wallet co-sign as fee payer and submit.
       let signatureBase58: string;
-      if (wallet.signAndSendTransaction) {
-        const sigBytes = await wallet.signAndSendTransaction(wireTransaction);
-        signatureBase58 = getBase58Decoder().decode(sigBytes);
-      } else if (wallet.signTransaction) {
+      if (wallet.signTransaction) {
         const signedWire = await wallet.signTransaction(wireTransaction);
         signatureBase58 = await rpc
           .sendTransaction(
@@ -125,6 +122,9 @@ export function useClaimBounty() {
             { encoding: "base64", preflightCommitment: "confirmed" }
           )
           .send();
+      } else if (wallet.signAndSendTransaction) {
+        const sigBytes = await wallet.signAndSendTransaction(wireTransaction);
+        signatureBase58 = getBase58Decoder().decode(sigBytes);
       } else {
         throw new Error("Wallet cannot sign transactions");
       }

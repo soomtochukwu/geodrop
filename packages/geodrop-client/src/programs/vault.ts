@@ -28,7 +28,7 @@ import {
 } from "../instructions";
 
 export const VAULT_PROGRAM_ADDRESS =
-  "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko" as Address<"4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko">;
+  "6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv" as Address<"6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv">;
 
 export enum VaultAccount {
   Drop,
@@ -115,7 +115,7 @@ export function identifyVaultInstruction(
 }
 
 export type ParsedVaultInstruction<
-  TProgram extends string = "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko",
+  TProgram extends string = "6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv",
 > =
   | ({
       instructionType: VaultInstruction.ClaimDrop;
