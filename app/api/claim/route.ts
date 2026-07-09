@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     const serializedSignatures = Object.fromEntries(
       Object.entries(signatures).map(([key, sig]) => [
         key,
-        base64Decoder.decode(sig as Uint8Array),
+        sig ? base64Decoder.decode(sig) : null,
       ])
     );
 

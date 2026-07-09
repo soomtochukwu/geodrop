@@ -26,6 +26,31 @@ import {
 } from "@solana/wallet-standard-features";
 import type { Address } from "@solana/kit";
 import { SOLANA_CHAIN } from "./config";
+import {
+  createDefaultAuthorizationCache,
+  createDefaultChainSelector,
+  createDefaultWalletNotFoundHandler,
+  registerMwa,
+} from "@solana-mobile/wallet-standard-mobile";
+
+// Register Mobile Wallet Adapter as a standard wallet on the client side
+if (typeof window !== "undefined") {
+  try {
+    registerMwa({
+      appIdentity: {
+        name: "GeoDrop",
+        uri: window.location.origin,
+        icon: "icon.svg",
+      },
+      authorizationCache: createDefaultAuthorizationCache(),
+      chains: ["solana:devnet", "solana:mainnet"],
+      chainSelector: createDefaultChainSelector(),
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),
+    });
+  } catch (e) {
+    console.warn("[GeoDrop] MWA Registration failed/skipped:", e);
+  }
+}
 
 /**
  * Browser replacement for the mobile app's Mobile Wallet Adapter provider
