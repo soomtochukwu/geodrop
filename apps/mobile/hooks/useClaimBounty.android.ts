@@ -46,7 +46,7 @@ export const useClaimBounty = () => {
           hunterPubkey: currentAccount.address,
           dropPubkey: dropAddress,
           blockhash,
-          lastValidBlockHeight,
+          lastValidBlockHeight: Number(lastValidBlockHeight),
         }),
       });
 

@@ -64,7 +64,7 @@ export function useClaimBounty() {
           hunterPubkey: wallet.address,
           dropPubkey: dropAddress,
           blockhash,
-          lastValidBlockHeight,
+          lastValidBlockHeight: Number(lastValidBlockHeight),
         }),
       });
 

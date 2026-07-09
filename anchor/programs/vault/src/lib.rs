@@ -110,12 +110,24 @@ pub mod vault {
             // Check if bounty is still active
             require!(drop.current_claims < drop.max_claims, VaultError::CampaignFinished);
 
-            // Check distance
+            // Check distance in decimeters (1/10 meters) to avoid floats
+            // 1 micro-degree of latitude ≈ 1.11 decimeters
             let d_lat = (drop.latitude - lat).abs();
+            let dy_dm = (d_lat as u128 * 111) / 100;
+
+            // 1 micro-degree of longitude ≈ 1.11 * cos(lat) decimeters
             let d_long = (drop.longitude - long).abs();
-            
-            let dist_sq = (d_lat as u128).pow(2) + (d_long as u128).pow(2);
-            let radius_sq = (drop.radius as u128).pow(2);
+            let lat_deg = (drop.latitude / 1_000_000).abs();
+            let cos_lat = if lat_deg >= 90 {
+                0
+            } else {
+                1000 - (lat_deg * lat_deg * 1000) / 7300
+            };
+            let dx_dm = (d_long as u128 * 111 * cos_lat as u128) / 100000;
+
+            let dist_sq = dy_dm.pow(2) + dx_dm.pow(2);
+            let radius_dm = drop.radius as u128 * 10;
+            let radius_sq = radius_dm.pow(2);
 
             require!(dist_sq <= radius_sq, VaultError::OutOfRange);
             

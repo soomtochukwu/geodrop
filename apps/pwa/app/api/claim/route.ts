@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       baseMessage
     );
     const messageWithLifetime = setTransactionMessageLifetimeUsingBlockhash(
-      { blockhash, lastValidBlockHeight },
+      { blockhash, lastValidBlockHeight: BigInt(lastValidBlockHeight) },
       messageWithPayer
     );
     const txMessage = appendTransactionMessageInstruction(

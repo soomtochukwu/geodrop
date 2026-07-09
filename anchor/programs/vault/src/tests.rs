@@ -237,4 +237,84 @@ mod tests {
 
         assert!(svm.get_account(&vault_pda).is_none());
     }
+
+    #[test]
+    fn test_claim_drop_range_validation() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/vault.so");
+        let _ = svm.add_program(PROGRAM_ID, program_bytes);
+
+        let sponsor = Keypair::new();
+        let hunter = Keypair::new();
+        let backend_authority = Keypair::new();
+        svm.airdrop(&sponsor.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&hunter.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let campaign_id = [9u8; 8];
+        let name = [0u8; 32];
+        let (drop_pda, _) = get_drop_pda(&sponsor.pubkey(), &campaign_id);
+
+        // Drop in San Francisco: 37.774900, -122.419400. Radius: 100 meters
+        let lat = 37_774_900i64;
+        let long = -122_419_400i64;
+        let radius = 100u64;
+        let reward = LAMPORTS_PER_SOL;
+        let max_claims = 1u64;
+
+        let init_ix = create_initialize_drop_ix(
+            &sponsor.pubkey(),
+            &drop_pda,
+            campaign_id,
+            name,
+            &backend_authority.pubkey(),
+            lat,
+            long,
+            radius,
+            reward,
+            max_claims,
+        );
+        svm.send_transaction(Transaction::new_signed_with_payer(
+            &[init_ix],
+            Some(&sponsor.pubkey()),
+            &[&sponsor],
+            svm.latest_blockhash(),
+        )).unwrap();
+
+        // 1. Claim from 122 meters away (1100 micro-degrees of latitude). This should fail.
+        let claim_outside_ix = create_claim_drop_ix(
+            &hunter.pubkey(),
+            &backend_authority.pubkey(),
+            &drop_pda,
+            lat + 1100, // ~122.2 meters away
+            long,
+        );
+        let claim_outside_tx = Transaction::new_signed_with_payer(
+            &[claim_outside_ix],
+            Some(&hunter.pubkey()),
+            &[&hunter, &backend_authority],
+            svm.latest_blockhash(),
+        );
+        assert!(svm.send_transaction(claim_outside_tx).is_err());
+
+        // 2. Claim from 66 meters away (600 micro-degrees of latitude). This should pass.
+        let claim_inside_ix = create_claim_drop_ix(
+            &hunter.pubkey(),
+            &backend_authority.pubkey(),
+            &drop_pda,
+            lat + 600, // ~66.6 meters away
+            long,
+        );
+        let claim_inside_tx = Transaction::new_signed_with_payer(
+            &[claim_inside_ix],
+            Some(&hunter.pubkey()),
+            &[&hunter, &backend_authority],
+            svm.latest_blockhash(),
+        );
+        svm.send_transaction(claim_inside_tx).unwrap();
+
+        // Verify hunter got reward
+        assert!(svm.get_account(&hunter.pubkey()).unwrap().lamports > 10 * LAMPORTS_PER_SOL);
+        // Verify drop is closed
+        assert!(svm.get_account(&drop_pda).is_none());
+    }
 }

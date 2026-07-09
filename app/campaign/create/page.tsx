@@ -96,8 +96,8 @@ export default function CreateCampaignPage() {
         return;
       }
 
-      // Backend authority (F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR)
-      const BACKEND_AUTHORITY = "F6LdrjT4GCn3gExB5oB6zP6JLLtqdYWw2qt9ezRoUKcR";
+      // Backend authority (FcimNGtwn1ygJa8ZL3E2JAydruAihNWDdc9zPypNUGNg)
+      const BACKEND_AUTHORITY = "FcimNGtwn1ygJa8ZL3E2JAydruAihNWDdc9zPypNUGNg";
       const backendAuthorityBytes = getAddressEncoder().encode(
         BACKEND_AUTHORITY as Address
       );
