@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@geodrop/client": ["./packages/geodrop-client/src/index.ts"],
+      "@geodrop/client/*": ["./packages/geodrop-client/src/*"]
     }
   },
   "include": [
@@ -30,5 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "apps", "video", "anchor", "packages"]
+  "exclude": ["node_modules", "apps", "video", "anchor"]
 }
