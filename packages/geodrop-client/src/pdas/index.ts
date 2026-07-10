@@ -6,6 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./bufferPda";
 export * from "./claimRecord";
+export * from "./delegationMetadataPda";
+export * from "./delegationRecordPda";
 export * from "./drop";
 export * from "./vault";

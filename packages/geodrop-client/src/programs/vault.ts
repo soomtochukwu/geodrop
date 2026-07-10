@@ -17,13 +17,23 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
+  parseClaimAndCommitInstruction,
   parseClaimDropInstruction,
+  parseDelegateDropInstruction,
   parseDepositInstruction,
   parseInitializeDropInstruction,
+  parsePayoutClaimInstruction,
+  parseProcessUndelegationInstruction,
+  parseUndelegateDropInstruction,
   parseWithdrawInstruction,
+  type ParsedClaimAndCommitInstruction,
   type ParsedClaimDropInstruction,
+  type ParsedDelegateDropInstruction,
   type ParsedDepositInstruction,
   type ParsedInitializeDropInstruction,
+  type ParsedPayoutClaimInstruction,
+  type ParsedProcessUndelegationInstruction,
+  type ParsedUndelegateDropInstruction,
   type ParsedWithdrawInstruction,
 } from "../instructions";
 
@@ -55,9 +65,14 @@ export function identifyVaultAccount(
 }
 
 export enum VaultInstruction {
+  ClaimAndCommit,
   ClaimDrop,
+  DelegateDrop,
   Deposit,
   InitializeDrop,
+  PayoutClaim,
+  ProcessUndelegation,
+  UndelegateDrop,
   Withdraw,
 }
 
@@ -69,12 +84,34 @@ export function identifyVaultInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([120, 213, 50, 89, 149, 69, 89, 123]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.ClaimAndCommit;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([157, 29, 89, 14, 81, 203, 107, 58]),
       ),
       0,
     )
   ) {
     return VaultInstruction.ClaimDrop;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([11, 100, 172, 144, 173, 50, 195, 32]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.DelegateDrop;
   }
   if (
     containsBytes(
@@ -102,6 +139,39 @@ export function identifyVaultInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([245, 117, 170, 236, 236, 239, 99, 252]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.PayoutClaim;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([196, 28, 41, 206, 48, 37, 51, 167]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.ProcessUndelegation;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([206, 237, 229, 197, 227, 249, 58, 80]),
+      ),
+      0,
+    )
+  ) {
+    return VaultInstruction.UndelegateDrop;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34]),
       ),
       0,
@@ -118,14 +188,29 @@ export type ParsedVaultInstruction<
   TProgram extends string = "6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv",
 > =
   | ({
+      instructionType: VaultInstruction.ClaimAndCommit;
+    } & ParsedClaimAndCommitInstruction<TProgram>)
+  | ({
       instructionType: VaultInstruction.ClaimDrop;
     } & ParsedClaimDropInstruction<TProgram>)
+  | ({
+      instructionType: VaultInstruction.DelegateDrop;
+    } & ParsedDelegateDropInstruction<TProgram>)
   | ({
       instructionType: VaultInstruction.Deposit;
     } & ParsedDepositInstruction<TProgram>)
   | ({
       instructionType: VaultInstruction.InitializeDrop;
     } & ParsedInitializeDropInstruction<TProgram>)
+  | ({
+      instructionType: VaultInstruction.PayoutClaim;
+    } & ParsedPayoutClaimInstruction<TProgram>)
+  | ({
+      instructionType: VaultInstruction.ProcessUndelegation;
+    } & ParsedProcessUndelegationInstruction<TProgram>)
+  | ({
+      instructionType: VaultInstruction.UndelegateDrop;
+    } & ParsedUndelegateDropInstruction<TProgram>)
   | ({
       instructionType: VaultInstruction.Withdraw;
     } & ParsedWithdrawInstruction<TProgram>);
@@ -135,11 +220,25 @@ export function parseVaultInstruction<TProgram extends string>(
 ): ParsedVaultInstruction<TProgram> {
   const instructionType = identifyVaultInstruction(instruction);
   switch (instructionType) {
+    case VaultInstruction.ClaimAndCommit: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.ClaimAndCommit,
+        ...parseClaimAndCommitInstruction(instruction),
+      };
+    }
     case VaultInstruction.ClaimDrop: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: VaultInstruction.ClaimDrop,
         ...parseClaimDropInstruction(instruction),
+      };
+    }
+    case VaultInstruction.DelegateDrop: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.DelegateDrop,
+        ...parseDelegateDropInstruction(instruction),
       };
     }
     case VaultInstruction.Deposit: {
@@ -154,6 +253,27 @@ export function parseVaultInstruction<TProgram extends string>(
       return {
         instructionType: VaultInstruction.InitializeDrop,
         ...parseInitializeDropInstruction(instruction),
+      };
+    }
+    case VaultInstruction.PayoutClaim: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.PayoutClaim,
+        ...parsePayoutClaimInstruction(instruction),
+      };
+    }
+    case VaultInstruction.ProcessUndelegation: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.ProcessUndelegation,
+        ...parseProcessUndelegationInstruction(instruction),
+      };
+    }
+    case VaultInstruction.UndelegateDrop: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: VaultInstruction.UndelegateDrop,
+        ...parseUndelegateDropInstruction(instruction),
       };
     }
     case VaultInstruction.Withdraw: {

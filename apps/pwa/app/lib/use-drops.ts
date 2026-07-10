@@ -49,16 +49,62 @@ export function useDrops(walletAddress?: string) {
       setLoading(true);
       try {
         const rpc = createSolanaRpc(RPC_URL);
-        const programAccounts = await rpc
+        const erRpc = createSolanaRpc("https://devnet-router.magicblock.app");
+        const DELEGATION_PROGRAM = "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh";
+
+        // Fetch undelegated drops
+        const baseAccountsPromise = rpc
           .getProgramAccounts(address(VAULT_PROGRAM_ADDRESS), {
             encoding: "base64",
           })
           .send();
 
-        const decodedDrops = programAccounts
-          .map((acc) => {
+        // Fetch delegated drops
+        const delegatedAccountsPromise = rpc
+          .getProgramAccounts(address(DELEGATION_PROGRAM), {
+            encoding: "base64",
+          })
+          .send();
+
+        const [baseAccounts, delegatedAccounts] = await Promise.all([
+          baseAccountsPromise,
+          delegatedAccountsPromise,
+        ]);
+
+        // Filter delegated program accounts to only include our drops
+        const filteredDelegated = delegatedAccounts.filter((acc) => {
+          try {
+            const rawData = acc.account.data;
+            const data = Array.isArray(rawData)
+              ? base64ToBytes(rawData[0] as string)
+              : base64ToBytes(rawData as unknown as string);
+            return hasDropDiscriminator(data);
+          } catch {
+            return false;
+          }
+        });
+
+        const programAccounts = [...baseAccounts, ...filteredDelegated];
+
+        const decodedDrops = await Promise.all(
+          programAccounts.map(async (acc) => {
             try {
-              const rawData = acc.account.data;
+              const isDelegated = acc.account.owner === DELEGATION_PROGRAM;
+              let rawData = acc.account.data;
+
+              if (isDelegated) {
+                try {
+                  const erAcc = await erRpc
+                    .getAccountInfo(acc.pubkey, { encoding: "base64" })
+                    .send();
+                  if (erAcc && erAcc.value) {
+                    rawData = erAcc.value.data;
+                  }
+                } catch (err) {
+                  console.warn("[GeoDrop] Failed to fetch delegated drop state from ER:", err);
+                }
+              }
+
               const data = Array.isArray(rawData)
                 ? base64ToBytes(rawData[0] as string)
                 : typeof rawData === "string"
@@ -72,17 +118,18 @@ export function useDrops(walletAddress?: string) {
                 data: data as unknown as ReadonlyUint8Array,
               } as Parameters<typeof decodeDrop>[0]);
             } catch {
-              // Non-drop or stale-layout account — skip it.
               return null;
             }
           })
-          .filter(Boolean) as Account<Drop>[];
+        );
 
-        if (!cancelled) setDrops(decodedDrops);
+        const activeDrops = decodedDrops.filter(Boolean) as Account<Drop>[];
+
+        if (!cancelled) setDrops(activeDrops);
 
         // Batch fetch claimed records if hunter wallet is connected
-        if (walletAddress && decodedDrops.length > 0) {
-          const pdaPromises = decodedDrops.map(async (d) => {
+        if (walletAddress && activeDrops.length > 0) {
+          const pdaPromises = activeDrops.map(async (d) => {
             const pda = await findClaimRecordPda({
               drop: address(d.address),
               hunter: address(walletAddress),
@@ -92,15 +139,25 @@ export function useDrops(walletAddress?: string) {
           const pdas = await Promise.all(pdaPromises);
           const pdaAddresses = pdas.map((p) => address(p.pdaAddress));
 
-          // Fetch all in a single batch
-          const accounts = await rpc.getMultipleAccounts(pdaAddresses).send();
+          // Fetch all in a single batch on base layer
+          const baseAccountsPromise = rpc.getMultipleAccounts(pdaAddresses).send();
+          // Fetch all in a single batch on ER
+          const erAccountsPromise = erRpc.getMultipleAccounts(pdaAddresses).send();
+
+          const [baseAccountsRes, erAccountsRes] = await Promise.all([
+            baseAccountsPromise,
+            erAccountsPromise,
+          ]);
 
           const claimedMap: Record<string, boolean> = {};
-          accounts.value.forEach((acc, idx) => {
-            if (acc) {
-              claimedMap[pdas[idx].dropAddress] = true;
+          pdas.forEach((p, idx) => {
+            const baseAcc = baseAccountsRes.value[idx];
+            const erAcc = erAccountsRes.value[idx];
+            if (baseAcc || erAcc) {
+              claimedMap[p.dropAddress] = true;
             }
           });
+
           if (!cancelled) setClaimedDrops(claimedMap);
         } else {
           if (!cancelled) setClaimedDrops({});
