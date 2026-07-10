@@ -10,7 +10,7 @@ import {
   address,
   getAddressEncoder,
 } from "@solana/kit";
-import { getClaimDropInstruction } from "@geodrop/client";
+import { getClaimDropInstruction, findClaimRecordPda } from "@geodrop/client";
 
 // TypeScript — single wallet gate using Proof of Human
 async function isHuman(walletAddress: string): Promise<boolean> {
@@ -109,11 +109,17 @@ export async function POST(request: Request) {
       false
     );
 
+    const [claimRecordPda] = await findClaimRecordPda({
+      drop: address(dropPubkey),
+      hunter: address(hunterPubkey),
+    });
+
     // Create the instruction
     const claimIx = getClaimDropInstruction({
       hunter: address(hunterPubkey),
       backendAuthority: backendSigner,
       drop: address(dropPubkey),
+      claimRecord: claimRecordPda,
       lat: BigInt(lat),
       long: BigInt(long),
     });

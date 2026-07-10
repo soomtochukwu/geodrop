@@ -33,8 +33,13 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from "@solana/kit";
+import { findClaimRecordPda } from "../pdas";
 import { VAULT_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from "../shared";
 
 export const CLAIM_DROP_DISCRIMINATOR = new Uint8Array([
   157, 29, 89, 14, 81, 203, 107, 58,
@@ -49,6 +54,7 @@ export type ClaimDropInstruction<
   TAccountHunter extends string | AccountMeta<string> = string,
   TAccountBackendAuthority extends string | AccountMeta<string> = string,
   TAccountDrop extends string | AccountMeta<string> = string,
+  TAccountClaimRecord extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -67,6 +73,9 @@ export type ClaimDropInstruction<
       TAccountDrop extends string
         ? WritableAccount<TAccountDrop>
         : TAccountDrop,
+      TAccountClaimRecord extends string
+        ? WritableAccount<TAccountClaimRecord>
+        : TAccountClaimRecord,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -114,15 +123,116 @@ export function getClaimDropInstructionDataCodec(): FixedSizeCodec<
   );
 }
 
-export type ClaimDropInput<
+export type ClaimDropAsyncInput<
   TAccountHunter extends string = string,
   TAccountBackendAuthority extends string = string,
   TAccountDrop extends string = string,
+  TAccountClaimRecord extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   hunter: TransactionSigner<TAccountHunter>;
   backendAuthority: TransactionSigner<TAccountBackendAuthority>;
   drop: Address<TAccountDrop>;
+  claimRecord?: Address<TAccountClaimRecord>;
+  systemProgram?: Address<TAccountSystemProgram>;
+  lat: ClaimDropInstructionDataArgs["lat"];
+  long: ClaimDropInstructionDataArgs["long"];
+};
+
+export async function getClaimDropInstructionAsync<
+  TAccountHunter extends string,
+  TAccountBackendAuthority extends string,
+  TAccountDrop extends string,
+  TAccountClaimRecord extends string,
+  TAccountSystemProgram extends string,
+  TProgramAddress extends Address = typeof VAULT_PROGRAM_ADDRESS,
+>(
+  input: ClaimDropAsyncInput<
+    TAccountHunter,
+    TAccountBackendAuthority,
+    TAccountDrop,
+    TAccountClaimRecord,
+    TAccountSystemProgram
+  >,
+  config?: { programAddress?: TProgramAddress },
+): Promise<
+  ClaimDropInstruction<
+    TProgramAddress,
+    TAccountHunter,
+    TAccountBackendAuthority,
+    TAccountDrop,
+    TAccountClaimRecord,
+    TAccountSystemProgram
+  >
+> {
+  // Program address.
+  const programAddress = config?.programAddress ?? VAULT_PROGRAM_ADDRESS;
+
+  // Original accounts.
+  const originalAccounts = {
+    hunter: { value: input.hunter ?? null, isWritable: true },
+    backendAuthority: {
+      value: input.backendAuthority ?? null,
+      isWritable: false,
+    },
+    drop: { value: input.drop ?? null, isWritable: true },
+    claimRecord: { value: input.claimRecord ?? null, isWritable: true },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+  };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
+
+  // Original args.
+  const args = { ...input };
+
+  // Resolve default values.
+  if (!accounts.claimRecord.value) {
+    accounts.claimRecord.value = await findClaimRecordPda({
+      drop: expectAddress(accounts.drop.value),
+      hunter: expectAddress(accounts.hunter.value),
+    });
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
+  }
+
+  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
+  return Object.freeze({
+    accounts: [
+      getAccountMeta(accounts.hunter),
+      getAccountMeta(accounts.backendAuthority),
+      getAccountMeta(accounts.drop),
+      getAccountMeta(accounts.claimRecord),
+      getAccountMeta(accounts.systemProgram),
+    ],
+    data: getClaimDropInstructionDataEncoder().encode(
+      args as ClaimDropInstructionDataArgs,
+    ),
+    programAddress,
+  } as ClaimDropInstruction<
+    TProgramAddress,
+    TAccountHunter,
+    TAccountBackendAuthority,
+    TAccountDrop,
+    TAccountClaimRecord,
+    TAccountSystemProgram
+  >);
+}
+
+export type ClaimDropInput<
+  TAccountHunter extends string = string,
+  TAccountBackendAuthority extends string = string,
+  TAccountDrop extends string = string,
+  TAccountClaimRecord extends string = string,
+  TAccountSystemProgram extends string = string,
+> = {
+  hunter: TransactionSigner<TAccountHunter>;
+  backendAuthority: TransactionSigner<TAccountBackendAuthority>;
+  drop: Address<TAccountDrop>;
+  claimRecord: Address<TAccountClaimRecord>;
   systemProgram?: Address<TAccountSystemProgram>;
   lat: ClaimDropInstructionDataArgs["lat"];
   long: ClaimDropInstructionDataArgs["long"];
@@ -132,6 +242,7 @@ export function getClaimDropInstruction<
   TAccountHunter extends string,
   TAccountBackendAuthority extends string,
   TAccountDrop extends string,
+  TAccountClaimRecord extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof VAULT_PROGRAM_ADDRESS,
 >(
@@ -139,6 +250,7 @@ export function getClaimDropInstruction<
     TAccountHunter,
     TAccountBackendAuthority,
     TAccountDrop,
+    TAccountClaimRecord,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
@@ -147,6 +259,7 @@ export function getClaimDropInstruction<
   TAccountHunter,
   TAccountBackendAuthority,
   TAccountDrop,
+  TAccountClaimRecord,
   TAccountSystemProgram
 > {
   // Program address.
@@ -160,6 +273,7 @@ export function getClaimDropInstruction<
       isWritable: false,
     },
     drop: { value: input.drop ?? null, isWritable: true },
+    claimRecord: { value: input.claimRecord ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -182,6 +296,7 @@ export function getClaimDropInstruction<
       getAccountMeta(accounts.hunter),
       getAccountMeta(accounts.backendAuthority),
       getAccountMeta(accounts.drop),
+      getAccountMeta(accounts.claimRecord),
       getAccountMeta(accounts.systemProgram),
     ],
     data: getClaimDropInstructionDataEncoder().encode(
@@ -193,6 +308,7 @@ export function getClaimDropInstruction<
     TAccountHunter,
     TAccountBackendAuthority,
     TAccountDrop,
+    TAccountClaimRecord,
     TAccountSystemProgram
   >);
 }
@@ -206,7 +322,8 @@ export type ParsedClaimDropInstruction<
     hunter: TAccountMetas[0];
     backendAuthority: TAccountMetas[1];
     drop: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    claimRecord: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: ClaimDropInstructionData;
 };
@@ -219,7 +336,7 @@ export function parseClaimDropInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedClaimDropInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -235,6 +352,7 @@ export function parseClaimDropInstruction<
       hunter: getNextAccount(),
       backendAuthority: getNextAccount(),
       drop: getNextAccount(),
+      claimRecord: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getClaimDropInstructionDataDecoder().decode(instruction.data),

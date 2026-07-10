@@ -102,6 +102,77 @@ pub mod vault {
     pub fn claim_drop(ctx: Context<ClaimDrop>, lat: i64, long: i64) -> Result<()> {
         let drop_info = ctx.accounts.drop.to_account_info();
         let hunter_info = ctx.accounts.hunter.to_account_info();
+        let claim_record_info = ctx.accounts.claim_record.to_account_info();
+
+        // Enforce one claim per hunter, except the specified tester pubkey
+        let is_tester = hunter_info.key() == std::str::FromStr::from_str("552usXzVzcLnZJCzyhokzWxmJpmVsZAV8pRywgShzj1u").unwrap();
+        if !is_tester {
+            // Ensure the claim_record PDA is empty (i.e. has 0 lamports and no owner)
+            require!(
+                claim_record_info.lamports() == 0,
+                VaultError::AlreadyClaimed
+            );
+
+            // Initialize/create the claim record PDA
+            let rent = Rent::get()?;
+            let lamports = rent.minimum_balance(0);
+
+            // Fund the PDA
+            anchor_lang::solana_program::program::invoke(
+                &anchor_lang::solana_program::system_instruction::transfer(
+                    hunter_info.key,
+                    claim_record_info.key,
+                    lamports,
+                ),
+                &[
+                    hunter_info.clone(),
+                    claim_record_info.clone(),
+                    ctx.accounts.system_program.to_account_info(),
+                ],
+            )?;
+
+            // Allocate space for the PDA
+            let (expected_pda, bump) = Pubkey::find_program_address(
+                &[b"claim", drop_info.key.as_ref(), hunter_info.key.as_ref()],
+                ctx.program_id,
+            );
+            require_keys_eq!(*claim_record_info.key, expected_pda, VaultError::InvalidClaimRecord);
+
+            anchor_lang::solana_program::program::invoke_signed(
+                &anchor_lang::solana_program::system_instruction::allocate(
+                    claim_record_info.key,
+                    0,
+                ),
+                &[
+                    claim_record_info.clone(),
+                    ctx.accounts.system_program.to_account_info(),
+                ],
+                &[&[
+                    b"claim",
+                    drop_info.key.as_ref(),
+                    hunter_info.key.as_ref(),
+                    &[bump],
+                ]],
+            )?;
+
+            // Assign ownership to our program
+            anchor_lang::solana_program::program::invoke_signed(
+                &anchor_lang::solana_program::system_instruction::assign(
+                    claim_record_info.key,
+                    ctx.program_id,
+                ),
+                &[
+                    claim_record_info.clone(),
+                    ctx.accounts.system_program.to_account_info(),
+                ],
+                &[&[
+                    b"claim",
+                    drop_info.key.as_ref(),
+                    hunter_info.key.as_ref(),
+                    &[bump],
+                ]],
+            )?;
+        }
 
         // Scoped check to avoid borrow conflicts
         let (is_last_claim, reward_amount) = {
@@ -195,6 +266,13 @@ pub struct ClaimDrop<'info> {
         constraint = drop.current_claims < drop.max_claims @ VaultError::CampaignFinished,
     )]
     pub drop: Account<'info, Drop>,
+    /// CHECK: Checked in instruction body dynamically
+    #[account(
+        mut,
+        seeds = [b"claim", drop.key().as_ref(), hunter.key().as_ref()],
+        bump,
+    )]
+    pub claim_record: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -224,4 +302,8 @@ pub enum VaultError {
     InvalidAuthority,
     #[msg("Campaign has finished")]
     CampaignFinished,
+    #[msg("Hunter has already claimed this drop")]
+    AlreadyClaimed,
+    #[msg("Invalid claim record PDA")]
+    InvalidClaimRecord,
 }

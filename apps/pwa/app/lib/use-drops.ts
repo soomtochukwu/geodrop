@@ -11,6 +11,7 @@ import {
   decodeDrop,
   DROP_DISCRIMINATOR,
   VAULT_PROGRAM_ADDRESS,
+  findClaimRecordPda,
   type Drop,
 } from "@geodrop/client";
 import { RPC_URL } from "./config";
@@ -30,11 +31,12 @@ function hasDropDiscriminator(data: Uint8Array) {
 }
 
 /**
- * Port of the mobile app's hooks/useDrops.ts: fetches every active drop
- * account from the vault program and refreshes every 30 seconds.
- */
-export function useDrops() {
+  * Port of the mobile app's hooks/useDrops.ts: fetches every active and past drop
+  * account from the vault program and checks if the current user has claimed them.
+  */
+export function useDrops(walletAddress?: string) {
   const [drops, setDrops] = useState<Account<Drop>[]>([]);
+  const [claimedDrops, setClaimedDrops] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -73,12 +75,33 @@ export function useDrops() {
           })
           .filter(Boolean) as Account<Drop>[];
 
-        // Hide campaigns that have paid out all their slots.
-        const activeDrops = decodedDrops.filter(
-          (d) => BigInt(d.data.currentClaims) < BigInt(d.data.maxClaims)
-        );
+        if (!cancelled) setDrops(decodedDrops);
 
-        if (!cancelled) setDrops(activeDrops);
+        // Batch fetch claimed records if hunter wallet is connected
+        if (walletAddress && decodedDrops.length > 0) {
+          const pdaPromises = decodedDrops.map(async (d) => {
+            const pda = await findClaimRecordPda({
+              drop: address(d.address),
+              hunter: address(walletAddress),
+            });
+            return { dropAddress: d.address, pdaAddress: pda[0] };
+          });
+          const pdas = await Promise.all(pdaPromises);
+          const pdaAddresses = pdas.map((p) => address(p.pdaAddress));
+
+          // Fetch all in a single batch
+          const accounts = await rpc.getMultipleAccounts(pdaAddresses).send();
+
+          const claimedMap: Record<string, boolean> = {};
+          accounts.value.forEach((acc, idx) => {
+            if (acc) {
+              claimedMap[pdas[idx].dropAddress] = true;
+            }
+          });
+          if (!cancelled) setClaimedDrops(claimedMap);
+        } else {
+          if (!cancelled) setClaimedDrops({});
+        }
       } catch (e) {
         console.error("[GeoDrop] Failed to fetch drops:", e);
       } finally {
@@ -92,7 +115,7 @@ export function useDrops() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [walletAddress]);
 
-  return { drops, loading };
+  return { drops, claimedDrops, loading };
 }
