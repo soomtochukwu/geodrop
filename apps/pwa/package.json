@@ -2,7 +2,6 @@
   "name": "@geodrop/pwa",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.33.3",
   "description": "GeoDrop Hunter PWA — installable web version of the mobile hunter app",
   "scripts": {
     "dev": "next dev --port 3001",

@@ -1,4 +1,4 @@
 {
-  "installCommand": "pnpm install",
+  "installCommand": "npm install --ignore-scripts",
   "buildCommand": "next build"
 }
