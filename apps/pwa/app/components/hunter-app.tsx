@@ -33,7 +33,7 @@ function ellipsify(str: string, len = 4) {
 export function HunterApp() {
   const { wallets, wallet, connecting, connect, disconnect } = useWallet();
   const { position, error: geoError } = useGeolocation();
-  const { drops, claimedDrops, loading: loadingDrops } = useDrops(wallet?.address);
+  const { drops, claimedDrops, loading: loadingDrops, refresh: refreshDrops } = useDrops(wallet?.address);
   const { claimBounty, status, txSignature, errorMessage, isWalletAvailable } =
     useClaimBounty();
 
@@ -42,6 +42,12 @@ export function HunterApp() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
     null
   );
+
+  useEffect(() => {
+    if (status === "success") {
+      refreshDrops();
+    }
+  }, [status, refreshDrops]);
 
   useEffect(() => {
     const onBeforeInstall = (e: Event) => {

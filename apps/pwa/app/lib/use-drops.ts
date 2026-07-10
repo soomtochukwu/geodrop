@@ -38,6 +38,9 @@ export function useDrops(walletAddress?: string) {
   const [drops, setDrops] = useState<Account<Drop>[]>([]);
   const [claimedDrops, setClaimedDrops] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
+  const [triggerRefresh, setTriggerRefresh] = useState(0);
+
+  const refresh = () => setTriggerRefresh((prev) => prev + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +118,7 @@ export function useDrops(walletAddress?: string) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [walletAddress]);
+  }, [walletAddress, triggerRefresh]);
 
-  return { drops, claimedDrops, loading };
+  return { drops, claimedDrops, loading, refresh };
 }
