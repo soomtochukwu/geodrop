@@ -1,4 +1,4 @@
 {
-  "installCommand": "ENABLE_EXPERIMENTAL_COREPACK=1 corepack enable && pnpm install",
+  "installCommand": "pnpm install",
   "buildCommand": "next build"
 }
