@@ -10,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@geodrop/client": "file:./geodrop-client.tgz",
+    "@geodrop/client": "file:geodrop-client.tgz",
     "@magicblock-labs/ephemeral-rollups-kit": "^0.15.5",
     "@solana-mobile/wallet-standard-mobile": "^0.5.3",
     "@solana/kit": "^6.3.0",

@@ -15,8 +15,26 @@ export type GeoPosition = {
 export function useGeolocation() {
   const [position, setPosition] = useState<GeoPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isMock, setIsMock] = useState(false);
+
+  const toggleMock = () => {
+    if (isMock) {
+      setIsMock(false);
+      setPosition(null);
+    } else {
+      setIsMock(true);
+      setPosition({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        accuracy: 10,
+      });
+      setError(null);
+    }
+  };
 
   useEffect(() => {
+    if (isMock) return;
+
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       setError("GEOLOCATION_NOT_SUPPORTED");
       return;
@@ -42,7 +60,7 @@ export function useGeolocation() {
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [isMock]);
 
-  return { position, error };
+  return { position, error, isMock, toggleMock, setPosition };
 }
