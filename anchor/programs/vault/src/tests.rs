@@ -88,6 +88,10 @@ mod tests {
         }
     }
 
+    fn get_claim_pda(drop: &Pubkey, hunter: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[b"claim", drop.as_ref(), hunter.as_ref()], &PROGRAM_ID)
+    }
+
     fn create_claim_drop_ix(
         hunter: &Pubkey,
         backend_authority: &Pubkey,
@@ -99,12 +103,15 @@ mod tests {
         data.extend_from_slice(&lat.to_le_bytes());
         data.extend_from_slice(&long.to_le_bytes());
 
+        let (claim_record, _) = get_claim_pda(drop_pda, hunter);
+
         Instruction {
             program_id: PROGRAM_ID,
             accounts: vec![
                 AccountMeta::new(*hunter, true),
                 AccountMeta::new(*backend_authority, true),
                 AccountMeta::new(*drop_pda, false),
+                AccountMeta::new(claim_record, false),
                 AccountMeta::new_readonly(system_program::ID, false),
             ],
             data,
@@ -316,5 +323,70 @@ mod tests {
         assert!(svm.get_account(&hunter.pubkey()).unwrap().lamports > 10 * LAMPORTS_PER_SOL);
         // Verify drop is closed
         assert!(svm.get_account(&drop_pda).is_none());
+    }
+
+    #[test]
+    fn test_claim_once_enforcement() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/vault.so");
+        let _ = svm.add_program(PROGRAM_ID, program_bytes);
+
+        let sponsor = Keypair::new();
+        let hunter = Keypair::new();
+        let backend_authority = Keypair::new();
+        svm.airdrop(&sponsor.pubkey(), 20 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&hunter.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let campaign_id = [9u8; 8];
+        let mut name = [0u8; 32];
+        name[0..13].copy_from_slice(b"Test Campaign");
+        
+        let lat = 50_000_000i64;
+        let long = 10_000_000i64;
+        let radius = 100u64;
+        let reward = 1 * LAMPORTS_PER_SOL;
+        let max_claims = 5u64;
+
+        let deposit_ix = create_deposit_ix(&sponsor.pubkey(), &get_vault_pda(&sponsor.pubkey()).0, 5 * LAMPORTS_PER_SOL);
+        let drop_pda = get_drop_pda(&sponsor.pubkey(), &campaign_id).0;
+        let init_ix = create_initialize_drop_ix(
+            &sponsor.pubkey(),
+            &drop_pda,
+            campaign_id,
+            name,
+            &backend_authority.pubkey(),
+            lat, long, radius, reward, max_claims
+        );
+
+        let tx = Transaction::new_signed_with_payer(
+            &[deposit_ix, init_ix],
+            Some(&sponsor.pubkey()),
+            &[&sponsor],
+            svm.latest_blockhash()
+        );
+        svm.send_transaction(tx).unwrap();
+
+        let drop_pda = get_drop_pda(&sponsor.pubkey(), &campaign_id).0;
+
+        // First claim: should succeed
+        let claim_ix1 = create_claim_drop_ix(&hunter.pubkey(), &backend_authority.pubkey(), &drop_pda, lat, long);
+        let claim_tx1 = Transaction::new_signed_with_payer(
+            &[claim_ix1],
+            Some(&hunter.pubkey()),
+            &[&hunter, &backend_authority],
+            svm.latest_blockhash(),
+        );
+        svm.send_transaction(claim_tx1).unwrap();
+
+        // Second claim by same hunter: should fail with AlreadyClaimed error
+        let claim_ix2 = create_claim_drop_ix(&hunter.pubkey(), &backend_authority.pubkey(), &drop_pda, lat, long);
+        let claim_tx2 = Transaction::new_signed_with_payer(
+            &[claim_ix2],
+            Some(&hunter.pubkey()),
+            &[&hunter, &backend_authority],
+            svm.latest_blockhash(),
+        );
+        let res = svm.send_transaction(claim_tx2);
+        assert!(res.is_err());
     }
 }

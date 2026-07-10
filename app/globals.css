@@ -114,34 +114,70 @@
 
 /* Leaflet GeoSearch Custom Styling */
 .leaflet-control-geosearch form {
-  @apply bg-background/80 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden shadow-xl;
+  @apply border border-border rounded-lg overflow-hidden shadow-xl;
+  background-color: #ffffff !important;
   width: 300px !important;
 }
 
 .leaflet-control-geosearch form input {
-  @apply bg-transparent text-foreground font-mono text-xs px-4 py-2 w-full outline-none;
-  color: white !important;
+  @apply bg-transparent font-mono text-xs px-4 py-2 w-full outline-none;
+  color: #000000 !important;
 }
 
 .leaflet-control-geosearch .results {
-  @apply bg-background/95 backdrop-blur-md border border-white/10 rounded-lg mt-2 overflow-hidden shadow-2xl;
-  color: white !important;
+  @apply border border-border rounded-lg mt-2 overflow-hidden shadow-2xl;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .leaflet-control-geosearch .results > * {
-  @apply px-4 py-2 text-[10px] font-mono border-b border-white/5 hover:bg-indigo-500/20 cursor-pointer transition-colors;
-  color: #a1a1aa !important;
+  @apply px-4 py-2 text-[10px] font-mono border-b border-border/5 hover:bg-indigo-500/10 cursor-pointer transition-colors;
+  color: #4b5563 !important;
 }
 
 .leaflet-control-geosearch .results > *:hover {
-  color: white !important;
+  color: #000000 !important;
 }
 
 .leaflet-control-geosearch .results > .active {
-  @apply bg-indigo-500/30 text-white;
+  @apply bg-indigo-500/20;
+  color: #000000 !important;
 }
 
 .leaflet-control-geosearch a.reset {
-  @apply text-muted-foreground hover:text-white;
+  @apply text-muted-foreground hover:text-foreground;
+  color: #4b5563 !important;
   right: 8px !important;
+}
+
+/* Explicit Dark Mode overrides (black background / white text) */
+.dark .leaflet-control-geosearch form {
+  background-color: #000000 !important;
+}
+
+.dark .leaflet-control-geosearch form input {
+  color: #ffffff !important;
+}
+
+.dark .leaflet-control-geosearch .results {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.dark .leaflet-control-geosearch .results > * {
+  color: #a1a1aa !important;
+}
+
+.dark .leaflet-control-geosearch .results > *:hover {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.dark .leaflet-control-geosearch .results > .active {
+  background-color: rgba(99, 102, 241, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.dark .leaflet-control-geosearch a.reset {
+  color: #a1a1aa !important;
 }

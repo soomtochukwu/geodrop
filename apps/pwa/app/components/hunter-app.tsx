@@ -33,11 +33,12 @@ function ellipsify(str: string, len = 4) {
 export function HunterApp() {
   const { wallets, wallet, connecting, connect, disconnect } = useWallet();
   const { position, error: geoError } = useGeolocation();
-  const { drops, loading: loadingDrops } = useDrops();
+  const { drops, claimedDrops, loading: loadingDrops } = useDrops(wallet?.address);
   const { claimBounty, status, txSignature, errorMessage, isWalletAvailable } =
     useClaimBounty();
 
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"radar" | "claims">("radar");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
     null
   );
@@ -52,14 +53,23 @@ export function HunterApp() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
   }, []);
 
+  // Filter out exhausted or already claimed drops when calculating the nearest drop
+  const availableDrops = useMemo(() => {
+    return drops.filter((drop) => {
+      const isClaimed = !!claimedDrops[drop.address];
+      const isExhausted = Number(drop.data.maxClaims) - Number(drop.data.currentClaims) <= 0;
+      return !isClaimed && !isExhausted;
+    });
+  }, [drops, claimedDrops]);
+
   // Find nearest drop and its live distance — same logic as the mobile app.
   const nearestDropInfo = useMemo(() => {
-    if (!position || drops.length === 0) return null;
+    if (!position || availableDrops.length === 0) return null;
 
     let minDistance = Infinity;
     let closestDrop: Account<Drop> | null = null;
 
-    drops.forEach((drop) => {
+    availableDrops.forEach((drop) => {
       const dist = calculateDistance(
         position.latitude,
         position.longitude,
@@ -75,7 +85,7 @@ export function HunterApp() {
     return closestDrop
       ? { drop: closestDrop as Account<Drop>, distance: minDistance }
       : null;
-  }, [position, drops]);
+  }, [position, availableDrops]);
 
   const nearestDrop = nearestDropInfo?.drop;
   const distance = nearestDropInfo?.distance ?? null;
@@ -88,6 +98,9 @@ export function HunterApp() {
     () =>
       drops.map((drop) => {
         const isNearest = nearestDrop?.address === drop.address;
+        const isClaimed = !!claimedDrops[drop.address];
+        const slotsLeft = Number(drop.data.maxClaims) - Number(drop.data.currentClaims);
+        const isExhausted = slotsLeft <= 0;
         return {
           address: drop.address,
           lat: microDegreesToDegrees(drop.data.latitude),
@@ -95,17 +108,21 @@ export function HunterApp() {
           radius: Number(drop.data.radius),
           name: decodeDropName(drop),
           rewardSol: formatLamportsToSol(drop.data.rewardPerClaim),
-          slotsLeft:
-            Number(drop.data.maxClaims) - Number(drop.data.currentClaims),
+          slotsLeft,
           isNearest,
           highlight: isNearest && inRange,
+          isClaimed,
+          isExhausted,
         };
       }),
-    [drops, nearestDrop, inRange]
+    [drops, nearestDrop, inRange, claimedDrops]
   );
 
+  const isNearestClaimed = nearestDrop ? !!claimedDrops[nearestDrop.address] : false;
+  const isNearestExhausted = nearestDrop ? (Number(nearestDrop.data.maxClaims) - Number(nearestDrop.data.currentClaims) <= 0) : false;
+
   const claimDisabled =
-    isWalletAvailable && (!inRange || status === "claiming");
+    isWalletAvailable && (!inRange || status === "claiming" || isNearestClaimed || isNearestExhausted);
 
   const handleMainButton = () => {
     if (!isWalletAvailable) {
@@ -123,9 +140,13 @@ export function HunterApp() {
       ? "SIGNING_TRANSACTION..."
       : status === "success"
         ? "BOUNTY_CLAIMED!"
-        : inRange
-          ? "CLAIM_BOUNTY"
-          : "OUT_OF_RANGE";
+        : isNearestClaimed
+          ? "ALREADY_CLAIMED"
+          : isNearestExhausted
+            ? "EXHAUSTED"
+            : inRange
+              ? "CLAIM_BOUNTY"
+              : "OUT_OF_RANGE";
 
   return (
     <div className="app">
@@ -162,52 +183,187 @@ export function HunterApp() {
         </div>
       </header>
 
-      <div className="map-shell">
-        {position ? (
-          <HunterMap
-            user={{ lat: position.latitude, lng: position.longitude }}
-            drops={mapDrops}
-          />
-        ) : (
-          <div className="map-loading">
-            {geoError === "LOCATION_PERMISSION_DENIED" ? (
-              <>
-                <span>LOCATION_ACCESS_DENIED</span>
-                <span style={{ fontSize: 10 }}>
-                  ENABLE_LOCATION_PERMISSIONS_TO_HUNT
-                </span>
-              </>
-            ) : geoError ? (
-              <span>{geoError}</span>
+      {/* Premium Tab Bar Navigation */}
+      <div className="tabs" style={{ display: "flex", gap: "8px", width: "100%", margin: "4px 0" }}>
+        <button
+          onClick={() => setActiveTab("radar")}
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: "10px",
+            background: activeTab === "radar" ? "var(--indigo)" : "rgba(255,255,255,0.02)",
+            border: "1px solid " + (activeTab === "radar" ? "var(--indigo)" : "rgba(255,255,255,0.06)"),
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "11px",
+            letterSpacing: "1px",
+            transition: "all 0.2s ease"
+          }}
+        >
+          RADAR_MAP
+        </button>
+        <button
+          onClick={() => setActiveTab("claims")}
+          style={{
+            flex: 1,
+            padding: "12px",
+            borderRadius: "10px",
+            background: activeTab === "claims" ? "var(--indigo)" : "rgba(255,255,255,0.02)",
+            border: "1px solid " + (activeTab === "claims" ? "var(--indigo)" : "rgba(255,255,255,0.06)"),
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "11px",
+            letterSpacing: "1px",
+            transition: "all 0.2s ease"
+          }}
+        >
+          MY_CLAIMS ({Object.keys(claimedDrops).length})
+        </button>
+      </div>
+
+      {activeTab === "radar" ? (
+        <>
+          <div className="map-shell">
+            {position ? (
+              <HunterMap
+                user={{ lat: position.latitude, lng: position.longitude }}
+                drops={mapDrops}
+              />
             ) : (
-              <span>ACQUIRING_GPS_SIGNAL...</span>
+              <div className="map-loading">
+                {geoError === "LOCATION_PERMISSION_DENIED" ? (
+                  <>
+                    <span>LOCATION_ACCESS_DENIED</span>
+                    <span style={{ fontSize: 10 }}>
+                      ENABLE_LOCATION_PERMISSIONS_TO_HUNT
+                    </span>
+                  </>
+                ) : geoError ? (
+                  <span>{geoError}</span>
+                ) : (
+                  <span>ACQUIRING_GPS_SIGNAL...</span>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
 
-      <div className="info">
-        <span className="info-label">
-          [ {nearestDrop ? "NEAREST_BOUNTY" : "SCANNING_AREA"} ]
-        </span>
-        <span className={`info-distance${inRange ? " in-range" : ""}`}>
-          {distance !== null ? `${distance.toFixed(1)}m` : "SEARCHING..."}
-        </span>
-        {nearestDrop && (
-          <span className="info-drop">
-            {decodeDropName(nearestDrop)} //{" "}
-            {formatLamportsToSol(nearestDrop.data.rewardPerClaim)} SOL
-          </span>
-        )}
-      </div>
+          <div className="info">
+            <span className="info-label">
+              [ {nearestDrop ? "NEAREST_BOUNTY" : "SCANNING_AREA"} ]
+            </span>
+            <span className={`info-distance${inRange ? " in-range" : ""}`}>
+              {distance !== null ? `${distance.toFixed(1)}m` : "SEARCHING..."}
+            </span>
+            {nearestDrop && (
+              <span className="info-drop">
+                {decodeDropName(nearestDrop)} //{" "}
+                {formatLamportsToSol(nearestDrop.data.rewardPerClaim)} SOL
+              </span>
+            )}
+          </div>
 
-      <button
-        className="claim-button"
-        disabled={claimDisabled}
-        onClick={handleMainButton}
-      >
-        {buttonLabel}
-      </button>
+          <button
+            className="claim-button"
+            disabled={claimDisabled}
+            onClick={handleMainButton}
+          >
+            {buttonLabel}
+          </button>
+        </>
+      ) : (
+        <div
+          className="claims-list"
+          style={{
+            width: "100%",
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            overflowY: "auto",
+            maxHeight: "65vh",
+            padding: "8px 0"
+          }}
+        >
+          {!wallet ? (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--dim)",
+                fontSize: "12px",
+                textAlign: "center",
+                gap: "10px",
+                padding: "40px"
+              }}
+            >
+              <span>CONNECT_WALLET_TO_VIEW_CLAIMS</span>
+              <button
+                className="chip"
+                onClick={() => setWalletModalOpen(true)}
+                style={{ cursor: "pointer", borderColor: "var(--indigo)" }}
+              >
+                CONNECT
+              </button>
+            </div>
+          ) : Object.keys(claimedDrops).length === 0 ? (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--dim)",
+                fontSize: "12px",
+                textAlign: "center",
+                padding: "40px"
+              }}
+            >
+              NO_PAST_CLAIMS_FOUND
+            </div>
+          ) : (
+            drops
+              .filter((d) => claimedDrops[d.address])
+              .map((d) => (
+                <div
+                  key={d.address}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.02)",
+                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    transition: "transform 0.2s ease"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: "bold", fontSize: "13px" }}>
+                      {decodeDropName(d)}
+                    </span>
+                    <span style={{ color: "var(--live)", fontWeight: "bold", fontSize: "13px" }}>
+                      +{formatLamportsToSol(d.data.rewardPerClaim)} SOL
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", color: "var(--muted)" }}>
+                    <span>DROP: {ellipsify(d.address, 6)}</span>
+                    <a
+                      href={`https://explorer.solana.com/address/${d.address}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "var(--indigo)", textDecoration: "underline" }}
+                    >
+                      EXPLORER
+                    </a>
+                  </div>
+                </div>
+              ))
+          )}
+        </div>
+      )}
 
       {status === "success" && txSignature && (
         <a

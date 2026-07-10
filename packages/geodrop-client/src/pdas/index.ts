@@ -6,5 +6,6 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./claimRecord";
 export * from "./drop";
 export * from "./vault";

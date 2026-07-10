@@ -6,11 +6,12 @@ import {
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
-  partiallySignTransactionMessageWithSigners,
+  signTransactionMessageWithSigners,
   address,
-  getAddressEncoder,
+  createSolanaRpc,
+  getTransactionEncoder,
 } from "@solana/kit";
-import { getClaimDropInstruction } from "@geodrop/client";
+import { getClaimDropInstruction, findClaimRecordPda } from "@geodrop/client";
 
 // TypeScript — single wallet gate using Proof of Human
 async function isHuman(walletAddress: string): Promise<boolean> {
@@ -66,18 +67,11 @@ export async function POST(request: Request) {
       long,
       hunterPubkey,
       dropPubkey,
-      blockhash,
-      lastValidBlockHeight,
+      blockhash: clientBlockhash,
+      lastValidBlockHeight: clientLastValidBlockHeight,
     } = await request.json();
 
-    if (
-      lat === undefined ||
-      long === undefined ||
-      !hunterPubkey ||
-      !dropPubkey ||
-      !blockhash ||
-      !lastValidBlockHeight
-    ) {
+    if (lat === undefined || long === undefined || !hunterPubkey || !dropPubkey) {
       return NextResponse.json(
         { error: "Missing required parameters" },
         { status: 400 }
@@ -109,11 +103,28 @@ export async function POST(request: Request) {
       false
     );
 
-    // Create the instruction
-    const claimIx = getClaimDropInstruction({
+    const rpc = createSolanaRpc(process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com");
+
+    // Fetch blockhash if not supplied by client
+    let blockhash = clientBlockhash;
+    let lastValidBlockHeight = clientLastValidBlockHeight;
+    if (!blockhash || !lastValidBlockHeight) {
+      const { value } = await rpc.getLatestBlockhash().send();
+      blockhash = value.blockhash;
+      lastValidBlockHeight = Number(value.lastValidBlockHeight);
+    }
+
+    const [claimRecordPda] = await findClaimRecordPda({
+      drop: address(dropPubkey),
       hunter: address(hunterPubkey),
+    });
+
+    // Create the instruction (hunter is passed as a raw Address, backendAuthority is keypair signer)
+    const claimIx = getClaimDropInstruction({
+      hunter: address(hunterPubkey) as any, // Cast since hunter is a SystemAccount now
       backendAuthority: backendSigner,
       drop: address(dropPubkey),
+      claimRecord: claimRecordPda,
       lat: BigInt(lat),
       long: BigInt(long),
     });
@@ -121,7 +132,7 @@ export async function POST(request: Request) {
     // Build the transaction
     const baseMessage = createTransactionMessage({ version: 0 });
     const messageWithPayer = setTransactionMessageFeePayer(
-      address(hunterPubkey),
+      backendSigner.address,
       baseMessage
     );
     const messageWithLifetime = setTransactionMessageLifetimeUsingBlockhash(
@@ -133,29 +144,23 @@ export async function POST(request: Request) {
       messageWithLifetime
     );
 
-    // Partially sign with the backend authority
-    const partiallySignedTx =
-      await partiallySignTransactionMessageWithSigners(txMessage);
+    // Fully sign the transaction (backendSigner is both feePayer and backendAuthority signer)
+    const fullySignedTx = await signTransactionMessageWithSigners(txMessage as any);
 
-    const base64Decoder = getBase64Decoder();
+    // Broadcast the transaction to the network
+    const wireTx = getTransactionEncoder().encode(fullySignedTx as any);
+    const signature = await rpc
+      .sendTransaction(getBase64Decoder().decode(wireTx) as any, {
+        encoding: "base64",
+        preflightCommitment: "confirmed",
+      })
+      .send();
 
-    // Encode the fully assembled transaction (it has signatures record but missing hunter's)
-    const signatures = partiallySignedTx.signatures;
-    const serializedSignatures = Object.fromEntries(
-      Object.entries(signatures).map(([key, sig]) => [
-        key,
-        sig ? base64Decoder.decode(sig) : null,
-      ])
-    );
-
-    return NextResponse.json({
-      messageBase64: base64Decoder.decode(partiallySignedTx.messageBytes),
-      signatures: serializedSignatures,
-    });
+    return NextResponse.json({ signature });
   } catch (error) {
-    console.error("Error signing claim:", error);
+    console.error("Error signing and broadcasting claim:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: error instanceof Error ? error.message : "Internal Server Error" },
       { status: 500 }
     );
   }
