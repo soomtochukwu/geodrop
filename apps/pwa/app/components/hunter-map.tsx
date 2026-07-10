@@ -98,6 +98,20 @@ function SearchField() {
   return null;
 }
 
+/** Triggers Leaflet size invalidation after mounting to ensure the map renders correctly. */
+function MapResizeTrigger() {
+  const map = useMap();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  return null;
+}
+
 export default function HunterMap({ user, drops }: HunterMapProps) {
   return (
     <MapContainer
@@ -111,6 +125,7 @@ export default function HunterMap({ user, drops }: HunterMapProps) {
 
       <FollowUser lat={user.lat} lng={user.lng} />
       <SearchField />
+      <MapResizeTrigger />
 
       <Marker position={[user.lat, user.lng]} icon={userIcon} />
 
