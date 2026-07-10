@@ -112,8 +112,10 @@ pub mod vault {
                 claim_record_info.lamports() == 0,
                 VaultError::AlreadyClaimed
             );
+        }
 
-            // Initialize/create the claim record PDA
+        // Initialize/create the claim record PDA if it does not exist yet (i.e. lamports == 0)
+        if claim_record_info.lamports() == 0 {
             let rent = Rent::get()?;
             let lamports = rent.minimum_balance(0);
 

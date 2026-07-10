@@ -33,7 +33,7 @@ function ellipsify(str: string, len = 4) {
 export function HunterApp() {
   const { wallets, wallet, connecting, connect, disconnect } = useWallet();
   const { position, error: geoError } = useGeolocation();
-  const { drops, claimedDrops, loading: loadingDrops } = useDrops(wallet?.address);
+  const { drops, claimedDrops, loading: loadingDrops, refresh: refreshDrops } = useDrops(wallet?.address);
   const { claimBounty, status, txSignature, errorMessage, isWalletAvailable } =
     useClaimBounty();
 
@@ -42,6 +42,28 @@ export function HunterApp() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
     null
   );
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    localStorage.setItem("theme", nextTheme);
+  };
+
+  useEffect(() => {
+    if (status === "success") {
+      refreshDrops();
+    }
+  }, [status, refreshDrops]);
 
   useEffect(() => {
     const onBeforeInstall = (e: Event) => {
@@ -156,6 +178,9 @@ export function HunterApp() {
           <span className="status-dot" />
         </div>
         <div className="header-actions">
+          <button className="chip" onClick={toggleTheme} title="Toggle Theme" style={{ marginRight: "4px" }}>
+            {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
+          </button>
           {installPrompt && (
             <button
               className="chip"
