@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@geodrop/client':
-        specifier: workspace:*
+        specifier: file:./packages/geodrop-client
         version: link:packages/geodrop-client
       '@lifi/sdk':
         specifier: ^3.16.3
