@@ -127,7 +127,7 @@ export async function POST(request: Request) {
     // Build the transaction
     const baseMessage = createTransactionMessage({ version: 0 });
     const messageWithPayer = setTransactionMessageFeePayer(
-      address(hunterPubkey),
+      backendSigner.address,
       baseMessage
     );
     const messageWithLifetime = setTransactionMessageLifetimeUsingBlockhash(
