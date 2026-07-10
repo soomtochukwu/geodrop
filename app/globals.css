@@ -114,34 +114,31 @@
 
 /* Leaflet GeoSearch Custom Styling */
 .leaflet-control-geosearch form {
-  @apply bg-background/80 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden shadow-xl;
+  @apply bg-background/80 backdrop-blur-md border border-border rounded-lg overflow-hidden shadow-xl;
   width: 300px !important;
 }
 
 .leaflet-control-geosearch form input {
   @apply bg-transparent text-foreground font-mono text-xs px-4 py-2 w-full outline-none;
-  color: white !important;
 }
 
 .leaflet-control-geosearch .results {
-  @apply bg-background/95 backdrop-blur-md border border-white/10 rounded-lg mt-2 overflow-hidden shadow-2xl;
-  color: white !important;
+  @apply bg-background/95 backdrop-blur-md border border-border rounded-lg mt-2 overflow-hidden shadow-2xl text-foreground;
 }
 
 .leaflet-control-geosearch .results > * {
-  @apply px-4 py-2 text-[10px] font-mono border-b border-white/5 hover:bg-indigo-500/20 cursor-pointer transition-colors;
-  color: #a1a1aa !important;
+  @apply px-4 py-2 text-[10px] font-mono border-b border-border/5 hover:bg-indigo-500/20 cursor-pointer transition-colors text-muted-foreground;
 }
 
 .leaflet-control-geosearch .results > *:hover {
-  color: white !important;
+  @apply text-foreground;
 }
 
 .leaflet-control-geosearch .results > .active {
-  @apply bg-indigo-500/30 text-white;
+  @apply bg-indigo-500/30 text-foreground;
 }
 
 .leaflet-control-geosearch a.reset {
-  @apply text-muted-foreground hover:text-white;
+  @apply text-muted-foreground hover:text-foreground;
   right: 8px !important;
 }
