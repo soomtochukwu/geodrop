@@ -42,6 +42,22 @@ export function HunterApp() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
     null
   );
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    localStorage.setItem("theme", nextTheme);
+  };
 
   useEffect(() => {
     if (status === "success") {
@@ -162,6 +178,9 @@ export function HunterApp() {
           <span className="status-dot" />
         </div>
         <div className="header-actions">
+          <button className="chip" onClick={toggleTheme} title="Toggle Theme" style={{ marginRight: "4px" }}>
+            {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
+          </button>
           {installPrompt && (
             <button
               className="chip"
