@@ -81,6 +81,11 @@ function MapControls({
     map.locate().on("locationfound", (e) => {
       onLocationChange(e.latlng.lat, e.latlng.lng);
       map.flyTo(e.latlng, map.getZoom());
+    }).on("locationerror", (err) => {
+      console.warn("Location access failed:", err.message);
+      // Fallback to San Francisco center
+      onLocationChange(37.7749, -122.4194);
+      map.flyTo([37.7749, -122.4194], map.getZoom());
     });
   };
 
