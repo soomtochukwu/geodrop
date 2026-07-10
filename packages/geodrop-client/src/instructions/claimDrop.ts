@@ -27,7 +27,6 @@ import {
   type InstructionWithAccounts,
   type InstructionWithData,
   type ReadonlyAccount,
-  type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
@@ -63,11 +62,10 @@ export type ClaimDropInstruction<
   InstructionWithAccounts<
     [
       TAccountHunter extends string
-        ? WritableSignerAccount<TAccountHunter> &
-            AccountSignerMeta<TAccountHunter>
+        ? WritableAccount<TAccountHunter>
         : TAccountHunter,
       TAccountBackendAuthority extends string
-        ? ReadonlySignerAccount<TAccountBackendAuthority> &
+        ? WritableSignerAccount<TAccountBackendAuthority> &
             AccountSignerMeta<TAccountBackendAuthority>
         : TAccountBackendAuthority,
       TAccountDrop extends string
@@ -130,7 +128,7 @@ export type ClaimDropAsyncInput<
   TAccountClaimRecord extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  hunter: TransactionSigner<TAccountHunter>;
+  hunter: Address<TAccountHunter>;
   backendAuthority: TransactionSigner<TAccountBackendAuthority>;
   drop: Address<TAccountDrop>;
   claimRecord?: Address<TAccountClaimRecord>;
@@ -173,7 +171,7 @@ export async function getClaimDropInstructionAsync<
     hunter: { value: input.hunter ?? null, isWritable: true },
     backendAuthority: {
       value: input.backendAuthority ?? null,
-      isWritable: false,
+      isWritable: true,
     },
     drop: { value: input.drop ?? null, isWritable: true },
     claimRecord: { value: input.claimRecord ?? null, isWritable: true },
@@ -229,7 +227,7 @@ export type ClaimDropInput<
   TAccountClaimRecord extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  hunter: TransactionSigner<TAccountHunter>;
+  hunter: Address<TAccountHunter>;
   backendAuthority: TransactionSigner<TAccountBackendAuthority>;
   drop: Address<TAccountDrop>;
   claimRecord: Address<TAccountClaimRecord>;
@@ -270,7 +268,7 @@ export function getClaimDropInstruction<
     hunter: { value: input.hunter ?? null, isWritable: true },
     backendAuthority: {
       value: input.backendAuthority ?? null,
-      isWritable: false,
+      isWritable: true,
     },
     drop: { value: input.drop ?? null, isWritable: true },
     claimRecord: { value: input.claimRecord ?? null, isWritable: true },

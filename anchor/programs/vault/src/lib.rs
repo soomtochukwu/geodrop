@@ -117,15 +117,15 @@ pub mod vault {
             let rent = Rent::get()?;
             let lamports = rent.minimum_balance(0);
 
-            // Fund the PDA
+            // Fund the PDA from the backend authority
             anchor_lang::solana_program::program::invoke(
                 &anchor_lang::solana_program::system_instruction::transfer(
-                    hunter_info.key,
+                    ctx.accounts.backend_authority.key,
                     claim_record_info.key,
                     lamports,
                 ),
                 &[
-                    hunter_info.clone(),
+                    ctx.accounts.backend_authority.to_account_info(),
                     claim_record_info.clone(),
                     ctx.accounts.system_program.to_account_info(),
                 ],
@@ -255,8 +255,10 @@ pub struct InitializeDrop<'info> {
 
 #[derive(Accounts)]
 pub struct ClaimDrop<'info> {
+    /// CHECK: The hunter receives the SOL reward and does not need to sign the transaction.
     #[account(mut)]
-    pub hunter: Signer<'info>,
+    pub hunter: UncheckedAccount<'info>,
+    #[account(mut)]
     pub backend_authority: Signer<'info>,
     #[account(
         mut,
