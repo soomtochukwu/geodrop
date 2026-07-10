@@ -11,7 +11,7 @@ import {
   createSolanaRpc,
   getTransactionEncoder,
 } from "@solana/kit";
-import { getClaimDropInstruction, findClaimRecordPda } from "@geodrop/client";
+import { getClaimDropInstruction, getClaimAndCommitInstruction, findClaimRecordPda } from "@geodrop/client";
 
 // TypeScript — single wallet gate using Proof of Human
 async function isHuman(walletAddress: string): Promise<boolean> {
@@ -105,29 +105,49 @@ export async function POST(request: Request) {
 
     const rpc = createSolanaRpc(process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com");
 
-    // Fetch blockhash if not supplied by client
-    let blockhash = clientBlockhash;
-    let lastValidBlockHeight = clientLastValidBlockHeight;
-    if (!blockhash || !lastValidBlockHeight) {
-      const { value } = await rpc.getLatestBlockhash().send();
-      blockhash = value.blockhash;
-      lastValidBlockHeight = Number(value.lastValidBlockHeight);
-    }
+    const DELEGATION_PROGRAM = "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh";
+    const dropAccount = await rpc.getAccountInfo(address(dropPubkey)).send();
+    const isDelegated = dropAccount?.value?.owner === DELEGATION_PROGRAM;
 
     const [claimRecordPda] = await findClaimRecordPda({
       drop: address(dropPubkey),
       hunter: address(hunterPubkey),
     });
 
-    // Create the instruction (hunter is passed as a raw Address, backendAuthority is keypair signer)
-    const claimIx = getClaimDropInstruction({
-      hunter: address(hunterPubkey) as any, // Cast since hunter is a SystemAccount now
-      backendAuthority: backendSigner,
-      drop: address(dropPubkey),
-      claimRecord: claimRecordPda,
-      lat: BigInt(lat),
-      long: BigInt(long),
-    });
+    let claimIx;
+    if (isDelegated) {
+      claimIx = getClaimAndCommitInstruction({
+        payer: backendSigner,
+        hunter: address(hunterPubkey),
+        drop: address(dropPubkey),
+        claimRecord: claimRecordPda,
+        magicContext: address("MagicContext1111111111111111111111111111111"),
+        magicProgram: address("Magic11111111111111111111111111111111111111"),
+        lat: BigInt(lat),
+        long: BigInt(long),
+      });
+    } else {
+      claimIx = getClaimDropInstruction({
+        hunter: address(hunterPubkey) as any,
+        backendAuthority: backendSigner,
+        drop: address(dropPubkey),
+        claimRecord: claimRecordPda,
+        lat: BigInt(lat),
+        long: BigInt(long),
+      });
+    }
+
+    // Determine target RPC (standard devnet or Magic Router rollup RPC)
+    const targetRpc = isDelegated ? createSolanaRpc("https://devnet-router.magicblock.app") : rpc;
+
+    // Fetch blockhash from target RPC
+    let blockhash = clientBlockhash;
+    let lastValidBlockHeight = clientLastValidBlockHeight;
+    if (!blockhash || !lastValidBlockHeight || isDelegated) {
+      const { value } = await targetRpc.getLatestBlockhash().send();
+      blockhash = value.blockhash;
+      lastValidBlockHeight = Number(value.lastValidBlockHeight);
+    }
 
     // Build the transaction
     const baseMessage = createTransactionMessage({ version: 0 });
@@ -144,12 +164,12 @@ export async function POST(request: Request) {
       messageWithLifetime
     );
 
-    // Fully sign the transaction (backendSigner is both feePayer and backendAuthority signer)
+    // Fully sign the transaction (backendSigner is both feePayer and signer/authority)
     const fullySignedTx = await signTransactionMessageWithSigners(txMessage as any);
 
     // Broadcast the transaction to the network
     const wireTx = getTransactionEncoder().encode(fullySignedTx as any);
-    const signature = await rpc
+    const signature = await targetRpc
       .sendTransaction(getBase64Decoder().decode(wireTx) as any, {
         encoding: "base64",
         preflightCommitment: "confirmed",

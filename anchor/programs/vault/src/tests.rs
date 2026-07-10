@@ -131,6 +131,7 @@ mod tests {
         svm.airdrop(&sponsor.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
         svm.airdrop(&hunter1.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
         svm.airdrop(&hunter2.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&backend_authority.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
 
         let campaign_id = [1u8; 8];
         let mut name = [0u8; 32];
@@ -256,6 +257,7 @@ mod tests {
         let backend_authority = Keypair::new();
         svm.airdrop(&sponsor.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
         svm.airdrop(&hunter.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&backend_authority.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
 
         let campaign_id = [9u8; 8];
         let name = [0u8; 32];
@@ -336,6 +338,7 @@ mod tests {
         let backend_authority = Keypair::new();
         svm.airdrop(&sponsor.pubkey(), 20 * LAMPORTS_PER_SOL).unwrap();
         svm.airdrop(&hunter.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&backend_authority.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
 
         let campaign_id = [9u8; 8];
         let mut name = [0u8; 32];

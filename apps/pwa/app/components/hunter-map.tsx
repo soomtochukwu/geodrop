@@ -157,7 +157,7 @@ export default function HunterMap({ user, drops }: HunterMapProps) {
               icon={dropIcon(color, label)}
             >
               <Popup>
-                <div style={{ color: "#fff", fontFamily: "var(--mono)", fontSize: "11px" }}>
+                <div style={{ color: "#000", fontFamily: "var(--mono)", fontSize: "11px" }}>
                   <strong style={{ display: "block", fontSize: "13px", marginBottom: "4px" }}>{drop.name}</strong>
                   <div style={{ marginBottom: "2px" }}>Reward: <span style={{ color: "#10b981", fontWeight: "bold" }}>{drop.rewardSol} SOL</span></div>
                   <div style={{ marginBottom: "2px" }}>Slots Left: <strong>{drop.slotsLeft}</strong></div>
