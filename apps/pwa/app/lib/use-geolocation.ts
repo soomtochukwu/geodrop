@@ -22,26 +22,44 @@ export function useGeolocation() {
       return;
     }
 
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        setPosition({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-        });
-        setError(null);
-      },
-      (err) => {
-        setError(
-          err.code === err.PERMISSION_DENIED
-            ? "LOCATION_PERMISSION_DENIED"
-            : "LOCATION_UNAVAILABLE"
-        );
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
-    );
+    let watchId: number;
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    const startWatch = (highAccuracy: boolean) => {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setPosition({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+          setError(null);
+        },
+        (err) => {
+          if (highAccuracy && (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE)) {
+            console.warn("[GeoDrop] High accuracy GPS failed/timed out, falling back to network-based location.");
+            navigator.geolocation.clearWatch(watchId);
+            startWatch(false);
+            return;
+          }
+          setError(
+            err.code === err.PERMISSION_DENIED
+              ? "LOCATION_PERMISSION_DENIED"
+              : "LOCATION_UNAVAILABLE"
+          );
+        },
+        {
+          enableHighAccuracy: highAccuracy,
+          maximumAge: highAccuracy ? 5000 : 10000,
+          timeout: highAccuracy ? 10000 : 20000,
+        }
+      );
+    };
+
+    startWatch(true);
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   return { position, error };
