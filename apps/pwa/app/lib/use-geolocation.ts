@@ -10,7 +10,8 @@ export type GeoPosition = {
 
 /**
  * Web counterpart of the mobile app's expo-location hook (hooks/useLocation.ts):
- * continuously watches the device position with high accuracy.
+ * continuously watches the device position with high accuracy, falling back to
+ * network-based location on timeout or error.
  */
 export function useGeolocation() {
   const [position, setPosition] = useState<GeoPosition | null>(null);

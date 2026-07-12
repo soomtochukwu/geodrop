@@ -32,7 +32,7 @@ function ellipsify(str: string, len = 4) {
 
 export function HunterApp() {
   const { wallets, wallet, connecting, connect, disconnect } = useWallet();
-  const { position, error: geoError } = useGeolocation();
+  const { position, error: geoError, isMock, toggleMock } = useGeolocation();
   const { drops, claimedDrops, loading: loadingDrops, refresh: refreshDrops } = useDrops(wallet?.address);
   const { claimBounty, status, txSignature, errorMessage, isWalletAvailable } =
     useClaimBounty();
@@ -174,10 +174,15 @@ export function HunterApp() {
     <div className="app">
       <header className="header">
         <div className="header-brand">
-          <span className="header-title">GEODROP // LIVE_RADAR</span>
-          <span className="status-dot" />
+          <span className="header-title">
+            GEODROP // {isMock ? "MOCK_RADAR ⚠️" : "LIVE_RADAR"}
+          </span>
+          <span className="status-dot" style={{ background: isMock ? "#f59e0b" : "var(--live)" }} />
         </div>
         <div className="header-actions">
+          <button className="chip" onClick={toggleMock} title="Toggle Mock GPS" style={{ marginRight: "4px" }}>
+            {isMock ? "📡 REAL GPS" : "📍 MOCK GPS"}
+          </button>
           <button className="chip" onClick={toggleTheme} title="Toggle Theme" style={{ marginRight: "4px" }}>
             {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
           </button>
@@ -255,7 +260,7 @@ export function HunterApp() {
                 drops={mapDrops}
               />
             ) : (
-              <div className="map-loading">
+              <div className="map-loading" style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center", justifyContent: "center" }}>
                 {geoError === "LOCATION_PERMISSION_DENIED" ? (
                   <>
                     <span>LOCATION_ACCESS_DENIED</span>
@@ -268,6 +273,19 @@ export function HunterApp() {
                 ) : (
                   <span>ACQUIRING_GPS_SIGNAL...</span>
                 )}
+                <button
+                  onClick={toggleMock}
+                  className="chip"
+                  style={{
+                    marginTop: "12px",
+                    borderColor: "var(--indigo)",
+                    background: "rgba(99, 102, 241, 0.15)",
+                    cursor: "pointer",
+                    fontSize: "10px",
+                  }}
+                >
+                  USE MOCK LOCATION (📍 SF)
+                </button>
               </div>
             )}
           </div>
