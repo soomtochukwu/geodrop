@@ -26,7 +26,6 @@ import {
   LayoutGrid,
   Loader2,
   Wallet,
-  X,
   Smartphone,
   CheckCircle2,
   Copy,
@@ -42,7 +41,6 @@ export default function Home() {
   const address = wallet?.account.address;
   const balance = useBalance(address);
   const [copied, setCopied] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
   const [shouldPulse, setShouldPulse] = useState(false);
 
   const [myDrops, setMyDrops] = useState<Account<Drop>[]>([]);
@@ -221,12 +219,6 @@ export default function Home() {
                     <Plus className="h-4 w-4" />
                     CREATE_NEW_DROP
                   </Link>
-                  <button
-                    onClick={() => setShowDemo(true)}
-                    className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-sm font-medium text-foreground transition-all hover:bg-white/10"
-                  >
-                    Watch Demo
-                  </button>
                 </div>
               </div>
 
@@ -372,31 +364,6 @@ export default function Home() {
           </div>
         </main>
       </div>
-
-      {showDemo && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-4xl p-4 animate-in zoom-in-95 duration-300">
-            <button
-              onClick={() => setShowDemo(false)}
-              className="absolute -top-12 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-              <iframe
-                width="100%"
-                height="100%"
-                src="https://www.youtube.com/embed/aog9_mYFT28?si=Ch4qEukIvS_vX3C6&autoplay=1"
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="fixed bottom-6 right-6 z-[50] animate-in slide-in-from-right-8 duration-700 delay-500">
         <a
