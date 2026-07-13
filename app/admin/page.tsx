@@ -73,7 +73,7 @@ export default function AdminPage() {
         try {
           const addr = addressHelper(programId);
           // Query accounts
-          const accounts = await client.rpc.getProgramAccounts(addr).send();
+          const accounts = await client.rpc.getProgramAccounts(addr, { encoding: "base64" }).send();
           for (const acc of accounts) {
             totalLamports += acc.account.lamports;
           }
