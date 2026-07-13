@@ -219,6 +219,7 @@ export default function AdminPage() {
             <h1 className="text-3xl md:text-4xl font-mono font-black uppercase tracking-tight text-white">
               System_Overview
             </h1>
+            <p className="text-[10px] font-mono text-muted-foreground uppercase mt-1">{"// ACROSS_TWO_MONITORED_PROGRAMS"}</p>
           </div>
           <button
             onClick={() => {
@@ -296,21 +297,19 @@ export default function AdminPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setActiveTab("waitlist")}
-                className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition ${
-                  activeTab === "waitlist"
+                className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition ${activeTab === "waitlist"
                     ? "bg-indigo-500 text-white font-bold"
                     : "text-muted-foreground hover:text-white"
-                }`}
+                  }`}
               >
                 Waitlist_Signups
               </button>
               <button
                 onClick={() => setActiveTab("beta")}
-                className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition ${
-                  activeTab === "beta"
+                className={`px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition ${activeTab === "beta"
                     ? "bg-indigo-500 text-white font-bold"
                     : "text-muted-foreground hover:text-white"
-                }`}
+                  }`}
               >
                 Beta_Applications
               </button>

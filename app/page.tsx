@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { GridBackground } from "./components/grid-background";
 import { ThemeToggle } from "./components/theme-toggle";
 import { track } from "@vercel/analytics";
+import { useSolanaClient } from "./lib/solana-client-context";
+import { address as addressHelper } from "@solana/kit";
 import {
   Smartphone,
   MapPin,
@@ -15,7 +17,8 @@ import {
   ChevronRight,
   X,
   Compass,
-  FileText
+  FileText,
+  TrendingUp
 } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -23,10 +26,54 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const PROGRAM_IDS = [
+  "6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv",
+  "4ysUbXcRMXJkmTx6y7ek34aDLkakG7ihpgZ4VEzXGmko",
+];
+
 export default function LandingPage() {
+  const client = useSolanaClient();
   const [showDemo, setShowDemo] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPwaModal, setShowPwaModal] = useState(false);
+
+  const [tvl, setTvl] = useState<number | null>(null);
+  const [txCount, setTxCount] = useState<number | null>(null);
+
+  const fetchOnChainMetrics = useCallback(async () => {
+    if (!client) return;
+    try {
+      let totalLamports = 0n;
+      let totalTxns = 0;
+
+      for (const programId of PROGRAM_IDS) {
+        try {
+          const addr = addressHelper(programId);
+          const accounts = await client.rpc.getProgramAccounts(addr, { encoding: "base64" }).send();
+          for (const acc of accounts) {
+            totalLamports += acc.account.lamports;
+          }
+
+          const sigs = await client.rpc.getSignaturesForAddress(addr, { limit: 100 }).send();
+          totalTxns += sigs.length;
+        } catch (e) {
+          console.error(`Failed to fetch accounts for ${programId}:`, e);
+        }
+      }
+
+      setTvl(Number(totalLamports) / 1_000_000_000);
+      setTxCount(totalTxns);
+    } catch (err) {
+      console.error("Failed to query onchain metrics:", err);
+    }
+  }, [client]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchOnChainMetrics();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchOnChainMetrics]);
 
   // Capture PWA install prompt
   useEffect(() => {
@@ -237,23 +284,46 @@ export default function LandingPage() {
               GeoDrop links onchain rewards directly to physical space. Escrow tokens are locked inside a Solana program vault, and can only be unlocked when a hunter presents valid coordinate proofs signed by their mobile client.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-card/20 p-8 backdrop-blur-xl space-y-4 font-mono text-[10px]">
-            <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-              <Shield className="h-4 w-4 text-emerald-400" />
-              <span className="text-white uppercase font-bold tracking-wider">{"// SYBIL_RESISTANCE_STATISTICS"}</span>
+          <div className="rounded-2xl border border-white/5 bg-card/20 p-8 backdrop-blur-xl space-y-6 font-mono text-[10px]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                <Shield className="h-4 w-4 text-emerald-400" />
+                <span className="text-white uppercase font-bold tracking-wider">{"// SYBIL_RESISTANCE_STATISTICS"}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{"// BOT_CLAIMS_ATTEMPTED"}</span>
+                  <span className="text-white">41,209</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{"// BOT_CLAIMS_SUCCESSFUL"}</span>
+                  <span className="text-emerald-400 font-bold">0 (0.00%)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{"// GENUINE_IRL_CLAIMS"}</span>
+                  <span className="text-white font-bold">12,854</span>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{"// BOT_CLAIMS_ATTEMPTED"}</span>
-                <span className="text-white">41,209</span>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                <TrendingUp className="h-4 w-4 text-indigo-400" />
+                <span className="text-white uppercase font-bold tracking-wider">{"// LIVE_ONCHAIN_METRICS"}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{"// BOT_CLAIMS_SUCCESSFUL"}</span>
-                <span className="text-emerald-400 font-bold">0 (0.00%)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{"// GENUINE_IRL_CLAIMS"}</span>
-                <span className="text-white font-bold">12,854</span>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{"// TOTAL_VALUE_LOCKED"}</span>
+                  <span className="text-white font-bold">
+                    {tvl !== null ? `${tvl.toFixed(4)} SOL` : "LOADING..."}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{"// TOTAL_TRANSACTIONS"}</span>
+                  <span className="text-white font-bold">
+                    {txCount !== null ? `${txCount}` : "LOADING..."}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
