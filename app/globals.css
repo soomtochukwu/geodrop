@@ -5,6 +5,7 @@
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
+  --foreground-rgb: 10, 10, 10;
   --primary: #171717;
   --primary-foreground: #fafafa;
   --muted: #737373;
@@ -32,6 +33,7 @@
 .dark {
   --background: #0a0a0a;
   --foreground: #fafafa;
+  --foreground-rgb: 250, 250, 250;
   --primary: #fafafa;
   --primary-foreground: #171717;
   --muted: #a3a3a3;
@@ -180,4 +182,47 @@
 
 .dark .leaflet-control-geosearch a.reset {
   color: #a1a1aa !important;
+}
+
+/* Light Theme Contrast Overrides */
+:root:not(.dark) {
+  /* Re-map white utility classes to dark ones for contrast */
+  .bg-white\/5 { background-color: rgba(10, 10, 10, 0.04) !important; }
+  .bg-white\/10 { background-color: rgba(10, 10, 10, 0.07) !important; }
+  .bg-white\/20 { background-color: rgba(10, 10, 10, 0.12) !important; }
+  .bg-card\/10 { background-color: rgba(10, 10, 10, 0.04) !important; }
+  .bg-card\/20 { background-color: rgba(10, 10, 10, 0.06) !important; }
+  .bg-card\/30 { background-color: rgba(10, 10, 10, 0.08) !important; }
+  
+  .border-white\/5 { border-color: rgba(10, 10, 10, 0.08) !important; }
+  .border-white\/10 { border-color: rgba(10, 10, 10, 0.12) !important; }
+  .border-white\/20 { border-color: rgba(10, 10, 10, 0.18) !important; }
+
+  /* Map text-white elements that are used on page background to text-foreground, 
+     except when nested inside dark colored backgrounds (buttons, indigo components) */
+  .text-white:not(button):not(button *):not(a.bg-indigo-500 *):not(a.bg-indigo-500):not(.bg-indigo-500):not(.bg-indigo-500 *):not(.bg-indigo-600 *):not(.bg-emerald-500 *):not(.bg-emerald-500) {
+    color: var(--foreground) !important;
+  }
+
+  /* Make code block backgrounds dark/high-contrast in light mode or clear */
+  code {
+    background-color: rgba(10, 10, 10, 0.06) !important;
+    color: #ef4444 !important;
+  }
+
+  /* Ensure inputs are fully visible and readable */
+  input, select, textarea {
+    color: var(--foreground) !important;
+    border-color: rgba(10, 10, 10, 0.15) !important;
+    background-color: rgba(10, 10, 10, 0.02) !important;
+  }
+  input::placeholder {
+    color: rgba(10, 10, 10, 0.45) !important;
+  }
+  
+  /* Make sure option tags inside select elements are styled for light theme */
+  option {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
 }
