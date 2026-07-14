@@ -1,76 +1,134 @@
-# Anchor Vault Program
+# Anchor program: `vault`
 
-This template includes a simple SOL vault program built with [Anchor](https://www.anchor-lang.com/).
+Solana program for GeoDrop geo-bounties. Despite the historical crate name, the product surface is **location-locked drop PDAs** with claim records, an oracle authority, and optional **MagicBlock** ephemeral-rollup delegation.
 
-## Pre-deployed Program
+Built with [Anchor](https://www.anchor-lang.com/) `0.32.1` and [`ephemeral-rollups-sdk`](https://docs.magicblock.gg/).
 
-The vault program is deployed on **devnet** at:
+## Devnet deployment
+
+| Field | Value |
+|-------|--------|
+| Program ID | `6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv` |
+| Cluster | `devnet` (see `Anchor.toml`) |
+| IDL / types | `target/idl/vault.json`, `target/types/vault.ts` |
+
+Wire the TypeScript SDK from the monorepo root:
+
+```bash
+pnpm run setup   # anchor build && codama → packages/geodrop-client
+```
+
+---
+
+## Accounts
+
+### `Drop` PDA
 
 ```
-F4jZpgbtTb6RWNWq6v35fUeiAsRJMrDczVPv9U23yXjB
+seeds = ["drop", sponsor, campaign_id]
 ```
 
-You can interact with it immediately by connecting your wallet to devnet.
+| Field | Type | Notes |
+|-------|------|--------|
+| `sponsor` | `Pubkey` | Campaign creator |
+| `campaign_id` | `[u8; 8]` | Unique per sponsor |
+| `name` | `[u8; 32]` | Display name |
+| `backend_authority` | `Pubkey` | Must sign `claim_drop` |
+| `latitude` / `longitude` | `i64` | Micro-degrees |
+| `radius` | `u64` | Meters |
+| `reward_per_claim` | `u64` | Lamports |
+| `max_claims` / `current_claims` | `u64` | Pool lifecycle |
 
-## Deploying Your Own Program
+Escrow = SOL held on the drop account. Total intended funding ≈ `reward_per_claim * max_claims` (with LiFi top-ups allowed before init).
 
-To deploy your own version of the program:
+### Claim record PDA
 
-### 1. Generate a new program keypair
+```
+seeds = ["claim", drop, hunter]
+```
+
+Empty → hunter has not claimed. Created during claim to enforce one claim per hunter (except a hardcoded tester key in current code—see AUDIT.md).
+
+### Legacy vault PDA
+
+```
+seeds = ["vault", signer]
+```
+
+Used only by `deposit` / `withdraw`.
+
+---
+
+## Instructions
+
+| Instruction | Who | Behavior |
+|-------------|-----|----------|
+| **`initialize_drop`** | Sponsor | Create drop PDA; transfer remaining SOL so escrow covers `reward × max_claims` if needed |
+| **`claim_drop`** | Backend authority (signer); hunter receives funds | Range check (integer approx. of Haversine in decimeters), increment claims, pay `reward_per_claim` (or rest on last claim) |
+| **`delegate_drop`** | Payer | Delegate drop PDA to MagicBlock for rollup execution |
+| **`claim_and_commit`** | Payer on rollup | Same geo/claim logic on ephemeral state; commits drop + claim record; queues **`payout_claim`** post-commit |
+| **`payout_claim`** | Post-commit action | Transfers SOL from drop to hunter on base layer after commit |
+| **`undelegate_drop`** | Payer | Commit + undelegate drop PDA |
+| **`deposit` / `withdraw`** | User | Legacy personal vault |
+
+Claim oracle (Next.js `POST /api/claim`) detects MagicBlock delegation via account owner and routes to `claim_and_commit` vs `claim_drop`.
+
+---
+
+## Build, test, deploy
+
+### Build
 
 ```bash
 cd anchor
-solana-keygen new -o target/deploy/vault-keypair.json
-```
-
-### 2. Get the new program ID
-
-```bash
-solana address -k target/deploy/vault-keypair.json
-```
-
-### 3. Update the program ID
-
-Update the program ID in these files:
-
-- `anchor/Anchor.toml` - Update `vault = "..."` under `[programs.devnet]`
-- `anchor/programs/vault/src/lib.rs` - Update `declare_id!("...")`
-
-### 4. Build and deploy
-
-```bash
-# Build the program
 anchor build
-
-# Get devnet SOL for deployment (~2 SOL needed)
-solana airdrop 2 --url devnet
-
-# Deploy to devnet
-anchor deploy --provider.cluster devnet
 ```
 
-### 5. Regenerate the TypeScript client
+### Tests
+
+LiteSVM unit tests live in `programs/vault/src/tests.rs`:
 
 ```bash
-cd ..
-npm run codama:js
+# from monorepo root
+pnpm run anchor-test
+# or
+cd anchor && anchor test --skip-deploy
 ```
 
-This updates the generated client code in `app/generated/vault/` with your new program ID.
+### Deploy your own program
 
-## Program Overview
+1. **New keypair**
 
-The vault program allows users to:
+   ```bash
+   solana-keygen new -o target/deploy/vault-keypair.json
+   solana address -k target/deploy/vault-keypair.json
+   ```
 
-- **Deposit**: Send SOL to a personal vault PDA (Program Derived Address)
-- **Withdraw**: Retrieve all SOL from your vault
+2. **Update program ID** in:
 
-Each user gets their own vault derived from their wallet address.
+   - `Anchor.toml` → `[programs.devnet] vault = "..."`
+   - `programs/vault/src/lib.rs` → `declare_id!("...")`
 
-## Testing
+3. **Build & deploy**
 
-Run the Anchor tests:
+   ```bash
+   anchor build
+   solana airdrop 2 --url devnet   # ~2 SOL for deploy
+   anchor deploy --provider.cluster devnet
+   ```
 
-```bash
-anchor test --skip-deploy
-```
+4. **Regenerate client** (from repo root)
+
+   ```bash
+   pnpm run codama:js
+   ```
+
+   Output: `packages/geodrop-client/src` (instructions, PDAs, errors, `VAULT_PROGRAM_ADDRESS`).
+
+---
+
+## Related docs
+
+- Root [README.md](../README.md) — full product stack
+- [AUDIT.md](../AUDIT.md) — auth, money, and claim-path findings
+- [packages/geodrop-client/README.md](../packages/geodrop-client/README.md) — consuming the IDL client

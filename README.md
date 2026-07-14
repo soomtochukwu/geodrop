@@ -1,116 +1,221 @@
 # [GeoDrop](https://original-geodrop.vercel.app/): Cross-Chain Physical Bounties
 
-![alt](https://hidden-labrador-133.convex.cloud/api/storage/5c7647f4-e71b-4882-9830-d5921d6b09b5)
+![GeoDrop](https://hidden-labrador-133.convex.cloud/api/storage/5c7647f4-e71b-4882-9830-d5921d6b09b5)
 
-**"GeoDrop: Gamifying real-world onboarding to the Solana ecosystem. It's Pokémon GO meets cross-chain yield—driving foot traffic for merchants and crypto adoption for the masses."**
+**GeoDrop gamifies real-world onboarding to Solana.** Pokémon GO meets geo-targeted bounties—sponsors fund location-locked SOL pools; hunters walk there and claim on-chain.
+
+| Role | Surface | Live URL |
+|------|---------|----------|
+| **Sponsors** | Web portal (create, fund, track campaigns) | [original-geodrop.vercel.app](https://original-geodrop.vercel.app/) |
+| **Hunters** | Installable PWA (map + claim) | [geodrop-hunter.vercel.app](https://geodrop-hunter.vercel.app/) |
+| **Hunters** | Android (Expo / MWA) | `apps/mobile` (devnet) |
+
+> **Network:** Devnet demo. Program ID `6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv`. See [AUDIT.md](./AUDIT.md) before putting real value on mainnet.
+
+---
 
 ## What is GeoDrop?
 
-GeoDrop is a decentralized, location-based bounty platform that turns the real world into an interactive crypto playground.
+- **For brands & sponsors:** Geo-targeted marketing with concurrent bounty drops. Pick coordinates on a map, set winners and reward-per-claim, fund with SOL or bridge from EVM chains via **LiFi**.
+- **For hunters:** Discover live drops on a radar map, walk into the radius, and claim a share of the pool. Location is checked on-chain (integer Haversine-style range); the claim oracle co-signs and can run **Proof of Human (POH)** sybil checks.
 
-- **For Brands & Sponsors:** A frictionless way to run scalable, geo-targeted marketing campaigns. Sponsors can deploy multiple concurrent bounty drops at specific physical coordinates, set a custom number of winners per drop, and fund rewards seamlessly from Ethereum, Base, or Arbitrum using our LiFi integration.
-- **For Users (Hunters):** An engaging, native Android app where users explore their city to discover live rewards. By physically walking to a location, they generate cryptographic proofs of location to claim an instant share of the bounty pool on Solana using the Mobile Wallet Adapter (MWA).
+---
 
-## 📱 Get the App
+## User flows
 
-Experience the hunt on your Android device:
-[**Download Hunter v1.0 (APK)**](https://wf-artifacts.eascdn.net/builds/internal-st/074e2a04-0740-457b-bd5b-1e54049e04ea/c3ef3df8-d2c6-4b5f-8903-107ae695bcec/019e126d-f5ac-74e8-a66e-81e1242e217d/application-c3ef3df8-d2c6-4b5f-8903-107ae695bcec.apk?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=75d871a1a44e598975dd84fa2341c9b0%2F20260510%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260510T181931Z&X-Amz-Expires=900&X-Amz-Signature=68b98810889ae0c7c74dd4929d51c130f70e213fd85cd4b2edadfe24de4d812d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)
+### 1. Sponsor portal (`app/`)
 
-## User Flow
+1. Connect a Solana wallet (Wallet Standard).
+2. **Create campaign** — location (search / locate me), campaign name, `max_claims`, `reward_per_claim`, radius.
+3. **Fund** — top up the drop PDA with SOL directly, or bridge/swap via the **LiFi** widget (Ethereum, Base, Arbitrum, …).
+4. **Initialize** — `initialize_drop` locks metadata + escrow on the drop PDA (`seeds = ["drop", sponsor, campaign_id]`).
+5. **Dashboard** — live claim progress and remaining pool balance from chain.
 
-### 1. Web Portal (The Sponsor)
+Also: landing, waitlist, beta signup, media kit, and admin views under `app/`.
 
-- **Campaign Creation:** A brand representative visits the GeoDrop web portal and selects a physical location on an interactive map using the integrated **Location Search** and **Locate Me** features.
-- **Bounty Scaling:** The sponsor defines the **number of possible winners** and the **reward per claim** (e.g., 50 winners at 0.1 SOL each).
-- **Flexible Funding:** Sponsors choose their preferred funding path:
-  - **Direct Solana Pay:** Fund the bounty pool instantly using SOL from their connected Solana wallet.
-  - **Cross-Chain Bridge:** Use the integrated **LiFi widget** to bridge and swap assets from EVM mainnets (Base, Ethereum, etc.) directly into the campaign escrow.
-- **Initialization:** The portal generates a unique **Campaign ID** and initializes the drop on the Solana Anchor program, locking in the territory and rewards.
-- **Sponsor Dashboard:** Track all active campaigns in real-time with **live progress bars** showing claim status and remaining pool balances fetched directly from the blockchain.
+### 2. Hunter clients
 
-### 2. Mobile App (The Hunter)
+| Capability | PWA (`apps/pwa`) | Android (`apps/mobile`) |
+|------------|------------------|-------------------------|
+| Map | Leaflet + dark tiles | `react-native-maps` (Google) |
+| GPS | `navigator.geolocation` | `expo-location` |
+| Wallet | Wallet Standard (Phantom, Solflare, …) | Mobile Wallet Adapter (Android) |
+| Claim API | Own `/api/claim` or env override | Expects host claim API (emulator: `10.0.2.2:3000`) |
 
-- **Discovery:** A user opens the GeoDrop app and sees a real-time "Pokémon GO" style map populated with active bounty markers. Markers explicitly display the **number of remaining winner slots**.
-- **The Hunt:** The user physically walks toward a bounty marker. The app uses the Haversine formula to calculate and display the live distance to the target in real-time.
-- **Verification:** When the user enters the drop radius (e.g., 50 meters), the "Claim" button becomes active.
-- **Security & Anti-Bot:** Upon pressing "Claim", the app sends the device's actual GPS coordinates to the GeoDrop backend. The backend performs two checks:
-  1.  **Sybil Resistance:** It verifies the wallet's humanity using the **Proof of Human (POH) API** to block bot farms.
-  2.  **Oracle Signature:** It confirms the coordinates are within the target radius and returns a cryptographic **ed25519 signature**.
-- **On-Chain Claim:** The app triggers the **Mobile Wallet Adapter (MWA)**. The user signs a transaction that includes the backend's proof. The Solana program verifies the signature and transfers a portion of the bounty pool directly to the user. The campaign remains active for others until the maximum number of claims is reached.
+**Claim path (simplified):**
 
-## Technical Architecture
+1. Hunter is inside the drop radius (client UI gates on distance).
+2. Client posts GPS + wallet + drop address to the claim oracle (`POST /api/claim`).
+3. Oracle optionally runs **POH**, builds `claim_drop` (or `claim_and_commit` if the drop is MagicBlock-delegated), signs as `backend_authority`, and broadcasts.
+4. Program verifies authority, range, claim counter, and one-claim-per-hunter (`claim` PDA), then pays SOL.
 
-GeoDrop bridges the physical and digital worlds using a high-performance stack optimized for the Solana Mobile ecosystem.
+---
 
-### Monorepo Structure
+## Architecture
 
-The project is a PNPM workspace monorepo:
+```
+                    ┌─────────────────────────────┐
+                    │  Sponsor Portal (Next.js)   │
+                    │  create · fund · dashboard  │
+                    └─────────────┬───────────────┘
+                                  │ initialize_drop / LiFi
+                                  ▼
+┌──────────────┐    drop PDA escrow     ┌──────────────────────────┐
+│ Hunter PWA / │ ─────────────────────► │  Anchor vault program    │
+│ Android app  │    claim via oracle    │  + optional MagicBlock   │
+└──────┬───────┘                        └──────────────────────────┘
+       │ POST /api/claim
+       ▼
+┌──────────────────┐     POH (optional)
+│ Claim oracle     │ ──► proofofhuman.ge
+│ BACKEND_PRIVATE  │
+└──────────────────┘
+```
 
-- **`app/`**: Next.js 15 (Turbopack) frontend for the Sponsor Dashboard.
-- **`apps/mobile/`**: React Native (Expo) Android application.
-- **`anchor/`**: Rust-based Solana smart contracts.
-- **`packages/geodrop-client/`**: Shared TypeScript SDK generated via **Codama**, ensuring type-safe program interactions across web and mobile.
+### Monorepo layout
 
-### Tech Stack & Integrations
+| Path | Role |
+|------|------|
+| `app/` | Next.js sponsor portal + landing + claim API |
+| `apps/pwa/` | Next.js hunter PWA (installable, port 3001) |
+| `apps/mobile/` | Expo React Native hunter app (Android-first) |
+| `anchor/` | Anchor program (`vault`) + LiteSVM tests |
+| `packages/geodrop-client/` | Codama-generated TypeScript SDK (`@geodrop/client`) |
+| `video/` | Remotion / demo video assets |
 
-- **Solana:** The core ledger for low-latency, high-volume physical bounties.
-- **Anchor (Rust):** Secure program framework for managing Escrow PDAs and signature verification.
-- **Next.js & Tailwind CSS:** Premium cyber-fintech UI for sponsors.
-- **React Native (Expo):** Cross-platform mobile development with native Android GPS access.
-- **@solana/kit (v2):** The next-generation Solana JavaScript library for lightweight, high-performance clients.
-- **Mobile Wallet Adapter (MWA):** Industry-standard protocol for secure on-device transaction signing.
-- **LiFi Protocol:** Cross-chain bridge and DEX aggregator powering frictionless campaign funding.
-- **Proof of Human (POH):** AI-powered sybil resistance to prevent location-spoofing bot farms.
-- **react-native-maps:** Immersive UI for real-world exploration.
+Workspace: **pnpm** (`pnpm-workspace.yaml` includes `apps/mobile` and `packages/*`). The PWA is a sibling Next app with its own lockfile for Vercel deploy.
+
+### On-chain program (`vault`)
+
+Deployed on **devnet**:
+
+```
+6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv
+```
+
+| Instruction | Purpose |
+|-------------|---------|
+| `initialize_drop` | Create/fund drop PDA (geo, reward, max claims, backend authority) |
+| `claim_drop` | Oracle-signed claim on L1; range check + payout |
+| `delegate_drop` | Delegate drop PDA to MagicBlock ephemeral rollup |
+| `claim_and_commit` | Claim on rollup + commit + post-commit payout |
+| `payout_claim` | Post-commit SOL transfer (rollup path) |
+| `undelegate_drop` | Commit and undelegate drop PDA |
+| `deposit` / `withdraw` | Legacy personal vault helpers |
+
+Shared client: regenerate with `pnpm run setup` (Anchor build + Codama → `packages/geodrop-client/src`).
+
+### Stack
+
+- **Solana** + **Anchor 0.32** — drop escrow PDAs, integer geo checks, claim records  
+- **MagicBlock ephemeral rollups** — optional low-latency claim path  
+- **@solana/kit** — modern JS client  
+- **Codama** — typed instructions / PDAs / accounts  
+- **Next.js 16** + **Tailwind 4** — portal & PWA  
+- **Expo / React Native** — mobile hunter  
+- **LiFi** — cross-chain campaign funding  
+- **Proof of Human** — best-effort sybil signal on claim  
+
+---
 
 ## Prerequisites
 
-Ensure you have the following installed on your system before proceeding:
-
-- [Node.js](https://nodejs.org/en/) (v20+ recommended)
-- [PNPM](https://pnpm.io/installation)
+- [Node.js](https://nodejs.org/) 20+ (22.x for PWA deploy)
+- [pnpm](https://pnpm.io/installation)
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools)
-- [Anchor CLI](https://www.anchor-lang.com/docs/installation)
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- [Anchor CLI](https://www.anchor-lang.com/docs/installation) `0.32.x`
+- Android Studio / device for mobile (optional)
 
-## Local Setup & Development
+---
 
-Follow these steps to run the complete GeoDrop stack locally.
+## Local development
 
-### 1. Install Dependencies
-
-Ensure you are in the `geodrop` directory and install all workspace dependencies using PNPM.
+### 1. Install
 
 ```bash
-cd geodrop
 pnpm install
 ```
 
-### 2. Build the Anchor Program & Generate SDK
-
-Compile the Solana smart contract and generate the strictly typed Codama client into the shared workspace package.
+### 2. Build program & regenerate client
 
 ```bash
-# Build the Rust contract and emit the IDL & TypeScript client
-pnpm run setup
+pnpm run setup   # anchor build && codama run js
 ```
 
-### 3. Start the Web Portal (Sponsor Dashboard)
-
-Run the Next.js development server. The dashboard will be available at `http://localhost:3000`.
+### 3. Environment (sponsor portal)
 
 ```bash
-# From the root of the geodrop directory
-pnpm run dev
+cp .env.example .env.local
 ```
 
-### 4. Start the Mobile App (Hunter)
+| Variable | Where | Notes |
+|----------|--------|--------|
+| `BACKEND_PRIVATE_KEY` | Server only | Hex ed25519 key for claim oracle; pubkey must match authority stored on drops |
+| `NEXT_PUBLIC_RPC_URL` | Client/server | Default `https://api.devnet.solana.com` |
+| `NEXT_PUBLIC_WAITLIST_FORM_URL` | Client | Optional Google Form embed |
+| `NEXT_PUBLIC_BETA_FORM_URL` | Client | Optional Google Form embed |
 
-Run the React Native Expo bundler. You can open it on an Android emulator or a physical device using the Expo Go app or a custom development build.
+The campaign create UI currently pins a backend authority pubkey; keep it paired with `BACKEND_PRIVATE_KEY`.
+
+### 4. Sponsor portal
 
 ```bash
-# In a new terminal window
+pnpm run dev          # http://localhost:3000
+```
+
+### 5. Hunter PWA
+
+```bash
+# From repo root, or work inside apps/pwa with npm
+cd apps/pwa
+cp .env.example .env.local   # set BACKEND_PRIVATE_KEY or CLAIM_API_URL
+npm install
+npm run dev                  # http://localhost:3001
+```
+
+Prefer pointing `NEXT_PUBLIC_CLAIM_API_URL` at the portal’s `/api/claim` so only one deployment holds the oracle key.
+
+### 6. Mobile (Android)
+
+```bash
 cd apps/mobile
+pnpm install   # or from root
 npx expo start
+# Android emulator: claim API defaults to http://10.0.2.2:3000/api/claim
+# Run the portal (or another claim host) accordingly.
 ```
+
+Physical devices need a reachable claim URL (not the emulator-only host). Claiming is Android-oriented (MWA).
+
+### Useful scripts (root)
+
+| Script | Action |
+|--------|--------|
+| `pnpm run dev` | Next portal (3000) |
+| `pnpm run build` | Production portal build |
+| `pnpm run setup` | Anchor build + Codama client |
+| `pnpm run anchor-test` | Program tests (`anchor test --skip-deploy`) |
+| `pnpm run codama:js` | Regenerate `@geodrop/client` only |
+| `pnpm run lint` / `format` | ESLint / Prettier |
+
+---
+
+## Documentation map
+
+| Doc | Contents |
+|-----|----------|
+| [anchor/README.md](./anchor/README.md) | Program IDs, instructions, deploy, tests |
+| [apps/pwa/README.md](./apps/pwa/README.md) | Hunter PWA config & install notes |
+| [apps/mobile/README.md](./apps/mobile/README.md) | Expo Android hunter |
+| [packages/geodrop-client/README.md](./packages/geodrop-client/README.md) | Shared TS SDK |
+| [AUDIT.md](./AUDIT.md) | Security/product audit & remediation plan |
+
+---
+
+## Links
+
+- Portal: https://original-geodrop.vercel.app/
+- Hunter PWA: https://geodrop-hunter.vercel.app/
+- GitHub: https://github.com/soomtochukwu/geodrop
+- X: https://x.com/geodropng
