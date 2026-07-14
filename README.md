@@ -4,11 +4,11 @@
 
 **GeoDrop gamifies real-world onboarding to Solana.** Pokémon GO meets geo-targeted bounties—sponsors fund location-locked SOL pools; hunters walk there and claim on-chain.
 
-| Role | Surface | Live URL |
-|------|---------|----------|
-| **Sponsors** | Web portal (create, fund, track campaigns) | [original-geodrop.vercel.app](https://original-geodrop.vercel.app/) |
-| **Hunters** | Installable PWA (map + claim) | [geodrop-hunter.vercel.app](https://geodrop-hunter.vercel.app/) |
-| **Hunters** | Android (Expo / MWA) | `apps/mobile` (devnet) |
+| Role         | Surface                                    | Live URL                                           |
+| ------------ | ------------------------------------------ | -------------------------------------------------- |
+| **Sponsors** | Web portal (create, fund, track campaigns) | [geodrop.online](https://www.geodrop.online/)      |
+| **Hunters**  | Installable PWA (map + claim)              | [gdhunter.online](https://http://gdhunter.online/) |
+| **Hunters**  | Android (Expo / MWA)                       | `apps/mobile` (devnet)                             |
 
 > **Network:** Devnet demo. Program ID `6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv`. See [AUDIT.md](./AUDIT.md) before putting real value on mainnet.
 
@@ -35,12 +35,12 @@ Also: landing, waitlist, beta signup, media kit, and admin views under `app/`.
 
 ### 2. Hunter clients
 
-| Capability | PWA (`apps/pwa`) | Android (`apps/mobile`) |
-|------------|------------------|-------------------------|
-| Map | Leaflet + dark tiles | `react-native-maps` (Google) |
-| GPS | `navigator.geolocation` | `expo-location` |
-| Wallet | Wallet Standard (Phantom, Solflare, …) | Mobile Wallet Adapter (Android) |
-| Claim API | Own `/api/claim` or env override | Expects host claim API (emulator: `10.0.2.2:3000`) |
+| Capability | PWA (`apps/pwa`)                       | Android (`apps/mobile`)                            |
+| ---------- | -------------------------------------- | -------------------------------------------------- |
+| Map        | Leaflet + dark tiles                   | `react-native-maps` (Google)                       |
+| GPS        | `navigator.geolocation`                | `expo-location`                                    |
+| Wallet     | Wallet Standard (Phantom, Solflare, …) | Mobile Wallet Adapter (Android)                    |
+| Claim API  | Own `/api/claim` or env override       | Expects host claim API (emulator: `10.0.2.2:3000`) |
 
 **Claim path (simplified):**
 
@@ -74,14 +74,14 @@ Also: landing, waitlist, beta signup, media kit, and admin views under `app/`.
 
 ### Monorepo layout
 
-| Path | Role |
-|------|------|
-| `app/` | Next.js sponsor portal + landing + claim API |
-| `apps/pwa/` | Next.js hunter PWA (installable, port 3001) |
-| `apps/mobile/` | Expo React Native hunter app (Android-first) |
-| `anchor/` | Anchor program (`vault`) + LiteSVM tests |
+| Path                       | Role                                                |
+| -------------------------- | --------------------------------------------------- |
+| `app/`                     | Next.js sponsor portal + landing + claim API        |
+| `apps/pwa/`                | Next.js hunter PWA (installable, port 3001)         |
+| `apps/mobile/`             | Expo React Native hunter app (Android-first)        |
+| `anchor/`                  | Anchor program (`vault`) + LiteSVM tests            |
 | `packages/geodrop-client/` | Codama-generated TypeScript SDK (`@geodrop/client`) |
-| `video/` | Remotion / demo video assets |
+| `video/`                   | Remotion / demo video assets                        |
 
 Workspace: **pnpm** (`pnpm-workspace.yaml` includes `apps/mobile` and `packages/*`). The PWA is a sibling Next app with its own lockfile for Vercel deploy.
 
@@ -93,28 +93,28 @@ Deployed on **devnet**:
 6mEc28x37u7281vSXg5CwcVtj2qKVX4dX1vwrQYG1RNv
 ```
 
-| Instruction | Purpose |
-|-------------|---------|
-| `initialize_drop` | Create/fund drop PDA (geo, reward, max claims, backend authority) |
-| `claim_drop` | Oracle-signed claim on L1; range check + payout |
-| `delegate_drop` | Delegate drop PDA to MagicBlock ephemeral rollup |
-| `claim_and_commit` | Claim on rollup + commit + post-commit payout |
-| `payout_claim` | Post-commit SOL transfer (rollup path) |
-| `undelegate_drop` | Commit and undelegate drop PDA |
-| `deposit` / `withdraw` | Legacy personal vault helpers |
+| Instruction            | Purpose                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| `initialize_drop`      | Create/fund drop PDA (geo, reward, max claims, backend authority) |
+| `claim_drop`           | Oracle-signed claim on L1; range check + payout                   |
+| `delegate_drop`        | Delegate drop PDA to MagicBlock ephemeral rollup                  |
+| `claim_and_commit`     | Claim on rollup + commit + post-commit payout                     |
+| `payout_claim`         | Post-commit SOL transfer (rollup path)                            |
+| `undelegate_drop`      | Commit and undelegate drop PDA                                    |
+| `deposit` / `withdraw` | Legacy personal vault helpers                                     |
 
 Shared client: regenerate with `pnpm run setup` (Anchor build + Codama → `packages/geodrop-client/src`).
 
 ### Stack
 
-- **Solana** + **Anchor 0.32** — drop escrow PDAs, integer geo checks, claim records  
-- **MagicBlock ephemeral rollups** — optional low-latency claim path  
-- **@solana/kit** — modern JS client  
-- **Codama** — typed instructions / PDAs / accounts  
-- **Next.js 16** + **Tailwind 4** — portal & PWA  
-- **Expo / React Native** — mobile hunter  
-- **LiFi** — cross-chain campaign funding  
-- **Proof of Human** — best-effort sybil signal on claim  
+- **Solana** + **Anchor 0.32** — drop escrow PDAs, integer geo checks, claim records
+- **MagicBlock ephemeral rollups** — optional low-latency claim path
+- **@solana/kit** — modern JS client
+- **Codama** — typed instructions / PDAs / accounts
+- **Next.js 16** + **Tailwind 4** — portal & PWA
+- **Expo / React Native** — mobile hunter
+- **LiFi** — cross-chain campaign funding
+- **Proof of Human** — best-effort sybil signal on claim
 
 ---
 
@@ -149,12 +149,12 @@ pnpm run setup   # anchor build && codama run js
 cp .env.example .env.local
 ```
 
-| Variable | Where | Notes |
-|----------|--------|--------|
-| `BACKEND_PRIVATE_KEY` | Server only | Hex ed25519 key for claim oracle; pubkey must match authority stored on drops |
-| `NEXT_PUBLIC_RPC_URL` | Client/server | Default `https://api.devnet.solana.com` |
-| `NEXT_PUBLIC_WAITLIST_FORM_URL` | Client | Optional Google Form embed |
-| `NEXT_PUBLIC_BETA_FORM_URL` | Client | Optional Google Form embed |
+| Variable                        | Where         | Notes                                                                         |
+| ------------------------------- | ------------- | ----------------------------------------------------------------------------- |
+| `BACKEND_PRIVATE_KEY`           | Server only   | Hex ed25519 key for claim oracle; pubkey must match authority stored on drops |
+| `NEXT_PUBLIC_RPC_URL`           | Client/server | Default `https://api.devnet.solana.com`                                       |
+| `NEXT_PUBLIC_WAITLIST_FORM_URL` | Client        | Optional Google Form embed                                                    |
+| `NEXT_PUBLIC_BETA_FORM_URL`     | Client        | Optional Google Form embed                                                    |
 
 The campaign create UI currently pins a backend authority pubkey; keep it paired with `BACKEND_PRIVATE_KEY`.
 
@@ -190,26 +190,26 @@ Physical devices need a reachable claim URL (not the emulator-only host). Claimi
 
 ### Useful scripts (root)
 
-| Script | Action |
-|--------|--------|
-| `pnpm run dev` | Next portal (3000) |
-| `pnpm run build` | Production portal build |
-| `pnpm run setup` | Anchor build + Codama client |
-| `pnpm run anchor-test` | Program tests (`anchor test --skip-deploy`) |
-| `pnpm run codama:js` | Regenerate `@geodrop/client` only |
-| `pnpm run lint` / `format` | ESLint / Prettier |
+| Script                     | Action                                      |
+| -------------------------- | ------------------------------------------- |
+| `pnpm run dev`             | Next portal (3000)                          |
+| `pnpm run build`           | Production portal build                     |
+| `pnpm run setup`           | Anchor build + Codama client                |
+| `pnpm run anchor-test`     | Program tests (`anchor test --skip-deploy`) |
+| `pnpm run codama:js`       | Regenerate `@geodrop/client` only           |
+| `pnpm run lint` / `format` | ESLint / Prettier                           |
 
 ---
 
 ## Documentation map
 
-| Doc | Contents |
-|-----|----------|
-| [anchor/README.md](./anchor/README.md) | Program IDs, instructions, deploy, tests |
-| [apps/pwa/README.md](./apps/pwa/README.md) | Hunter PWA config & install notes |
-| [apps/mobile/README.md](./apps/mobile/README.md) | Expo Android hunter |
-| [packages/geodrop-client/README.md](./packages/geodrop-client/README.md) | Shared TS SDK |
-| [AUDIT.md](./AUDIT.md) | Security/product audit & remediation plan |
+| Doc                                                                      | Contents                                  |
+| ------------------------------------------------------------------------ | ----------------------------------------- |
+| [anchor/README.md](./anchor/README.md)                                   | Program IDs, instructions, deploy, tests  |
+| [apps/pwa/README.md](./apps/pwa/README.md)                               | Hunter PWA config & install notes         |
+| [apps/mobile/README.md](./apps/mobile/README.md)                         | Expo Android hunter                       |
+| [packages/geodrop-client/README.md](./packages/geodrop-client/README.md) | Shared TS SDK                             |
+| [AUDIT.md](./AUDIT.md)                                                   | Security/product audit & remediation plan |
 
 ---
 

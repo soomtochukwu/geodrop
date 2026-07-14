@@ -2,15 +2,15 @@
 
 Installable web hunter for GeoDrop. Live map of on-chain bounty drops, GPS tracking, and claim flow when you are physically inside a drop’s radius.
 
-**Production:** [geodrop-hunter.vercel.app](https://geodrop-hunter.vercel.app/)
+**Production:** [geodrop.online](https://www.geodrop.online/)
 
 Feature parity with the Android app (`apps/mobile`), using browser-native stacks:
 
-| Mobile (`apps/mobile`) | PWA (`apps/pwa`) |
-|------------------------|------------------|
-| `react-native-maps` (Google) | Leaflet + CARTO dark tiles |
-| `expo-location` watcher | `navigator.geolocation.watchPosition` |
-| Solana Mobile Wallet Adapter | Wallet Standard (Phantom, Solflare, …) |
+| Mobile (`apps/mobile`)              | PWA (`apps/pwa`)                                |
+| ----------------------------------- | ----------------------------------------------- |
+| `react-native-maps` (Google)        | Leaflet + CARTO dark tiles                      |
+| `expo-location` watcher             | `navigator.geolocation.watchPosition`           |
+| Solana Mobile Wallet Adapter        | Wallet Standard (Phantom, Solflare, …)          |
 | Emulator claim host `10.0.2.2:3000` | Own `/api/claim` or `NEXT_PUBLIC_CLAIM_API_URL` |
 
 ## How claiming works
@@ -21,7 +21,7 @@ Feature parity with the Android app (`apps/mobile`), using browser-native stacks
 4. Oracle may run **Proof of Human**, then builds either:
    - `claim_drop` (base layer), or
    - `claim_and_commit` (if the drop account is MagicBlock-delegated),
-   signs as the backend authority, and **broadcasts** the transaction.
+     signs as the backend authority, and **broadcasts** the transaction.
 5. UI shows signature / explorer link on success.
 
 > Prefer a single oracle deployment: point `NEXT_PUBLIC_CLAIM_API_URL` at the sponsor portal’s `/api/claim` so `BACKEND_PRIVATE_KEY` is not duplicated.
@@ -47,12 +47,12 @@ pnpm --filter @geodrop/pwa dev
 
 ## Environment
 
-| Variable | Required | Default / notes |
-|----------|----------|-----------------|
-| `BACKEND_PRIVATE_KEY` | If using local `/api/claim` | Hex ed25519 (64-byte keypair or 32-byte seed as hex) |
-| `NEXT_PUBLIC_RPC_URL` | No | `https://api.devnet.solana.com` |
-| `NEXT_PUBLIC_SOLANA_CHAIN` | No | `solana:devnet` |
-| `NEXT_PUBLIC_CLAIM_API_URL` | No | `/api/claim` — set to portal URL to share oracle |
+| Variable                    | Required                    | Default / notes                                      |
+| --------------------------- | --------------------------- | ---------------------------------------------------- |
+| `BACKEND_PRIVATE_KEY`       | If using local `/api/claim` | Hex ed25519 (64-byte keypair or 32-byte seed as hex) |
+| `NEXT_PUBLIC_RPC_URL`       | No                          | `https://api.devnet.solana.com`                      |
+| `NEXT_PUBLIC_SOLANA_CHAIN`  | No                          | `solana:devnet`                                      |
+| `NEXT_PUBLIC_CLAIM_API_URL` | No                          | `/api/claim` — set to portal URL to share oracle     |
 
 See `.env.example`.
 
@@ -65,11 +65,11 @@ See `.env.example`.
 
 ## Scripts
 
-| Script | Action |
-|--------|--------|
-| `npm run dev` | Next dev server on port **3001** |
-| `npm run build` | Production build |
-| `npm run start` | Serve production build on 3001 |
+| Script          | Action                           |
+| --------------- | -------------------------------- |
+| `npm run dev`   | Next dev server on port **3001** |
+| `npm run build` | Production build                 |
+| `npm run start` | Serve production build on 3001   |
 
 ## Related
 
