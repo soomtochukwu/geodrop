@@ -277,7 +277,9 @@ export default function LandingPage() {
                   </ScrollReveal>
                   <ScrollReveal variant="slide-up" delay={0.3}>
                     <p className="text-base md:text-lg text-foreground/50 max-w-lg leading-relaxed">
-                      The first location-aware bounty platform on Solana. Sponsors drop tokens at real GPS coordinates — hunters find and claim them IRL. Fast, transparent, and completely bot-proof.
+                      We turn crypto marketing budgets into real people, in real places.
+                      <br />
+                      ...physical bounties that put verified users on the map.
                     </p>
                   </ScrollReveal>
                   <ScrollReveal variant="slide-up" delay={0.4}>
