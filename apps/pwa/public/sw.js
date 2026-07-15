@@ -7,7 +7,7 @@
  *  - Never caches /api/* (the claim oracle) or any cross-origin request
  *    (Solana RPC, map tiles) — those must always hit the network.
  */
-const CACHE_NAME = "geodrop-shell-v1";
+const CACHE_NAME = "geodrop-shell-v2";
 
 const PRECACHE_URLS = [
   "/",
